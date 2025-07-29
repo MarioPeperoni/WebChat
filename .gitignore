@@ -1,0 +1,53 @@
+# ---- Node (Vite frontend) ----
+node_modules/
+dist/
+.vite/
+*.log
+.env
+.env.*
+
+
+# ---- Vite cache ----
+.cache/
+*.local
+
+# ---- OS / Editor ----
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# ---- Python (FastAPI backend) ----
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+*.eggs/
+build/
+dist/
+venv/
+.env/
+*.sqlite3
+*.db
+*.log
+
+# ---- Pyright / TypeScript / React ----
+*.tsbuildinfo
+*.tscache/
+*.eslintcache
+
+# ---- Testing / coverage ----
+coverage/
+htmlcov/
+.tox/
+.pytest_cache/
+
+# ---- Optional socket message log or temp storage ----
+*.sock
+*.pid
+tmp/
+
+# ---- Static assets (built) ----
+public/build/
