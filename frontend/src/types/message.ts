@@ -1,7 +1,6 @@
+import type { User } from './user';
+
 export type Message = {
-  user: {
-    name: string;
-    color: string;
-  };
+  user: User;
   content: string;
 };
