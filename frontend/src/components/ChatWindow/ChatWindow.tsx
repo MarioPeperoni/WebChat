@@ -66,7 +66,16 @@ const ChatWindow = () => {
         {messages &&
           messages.map((msg, index) => (
             <li key={index}>
-              <strong>{msg.user.name}:</strong> {msg.content}
+              <strong>
+                <span
+                  style={{
+                    color: msg.user.color,
+                  }}
+                >
+                  {msg.user.name} {user?.name == msg.user.name ? ' (You)' : ''}:
+                </span>{' '}
+              </strong>
+              {msg.content}
             </li>
           ))}
         <div ref={messagesEndRef} />
