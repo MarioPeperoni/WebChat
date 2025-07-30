@@ -2,7 +2,7 @@ from fastapi import Request, APIRouter
 
 import random
 
-from models.message import User
+from app.models.message import User
 
 COLORS = [
     "#e6194b", "#3cb44b", "#ffe119", "#4363d8", "#f58231",

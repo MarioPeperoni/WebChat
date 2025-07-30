@@ -1,4 +1,4 @@
-from models.message import MessageOut
+from app.models.message import MessageOut
 
 async def save_message_to_db(message: MessageOut):
     pass

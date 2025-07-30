@@ -6,10 +6,10 @@ from pydantic import ValidationError
 
 from starlette.websockets import WebSocketDisconnect
 
-from services.database import save_message_to_db
-from services.websocket import ConnectionManager
+from app.services.database import save_message_to_db
+from app.services.websocket import ConnectionManager
 
-from models.message import MessageIn, MessageOut
+from app.models.message import MessageIn, MessageOut
 
 manager = ConnectionManager()
 router = APIRouter(prefix="/chat", tags=["chat"])
