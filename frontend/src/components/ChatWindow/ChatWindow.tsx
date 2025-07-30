@@ -14,6 +14,8 @@ const ChatWindow = () => {
 
   const [messages, setMessages] = useState<Message[]>();
 
+  const [ready, setReady] = useState(false);
+
   const [isSending, startSending] = useTransition();
 
   useEffect(() => {
@@ -34,6 +36,13 @@ const ChatWindow = () => {
       socket.close();
     };
   }, []);
+
+  useEffect(() => {
+    // Ensure the user is set and socket is connected
+    if (user && socketRef.current && !ready) {
+      setReady(true);
+    }
+  }, [user, ready]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -61,8 +70,18 @@ const ChatWindow = () => {
   };
 
   return (
-    <div className="chat-container">
+    <section className="chat-container">
       <ul className="message-list">
+        <li>
+          {ready ? (
+            <>
+              Connected to the chatroom as{' '}
+              <strong style={{ color: user!.color }}>{user!.name}</strong>.
+            </>
+          ) : (
+            'Connecting to chatroom...'
+          )}
+        </li>
         {messages &&
           messages.map((msg, index) => (
             <li key={index}>
@@ -71,6 +90,7 @@ const ChatWindow = () => {
                   style={{
                     color: msg.user.color,
                   }}
+                  aria-label={`Message from ${msg.user.name}`}
                 >
                   {msg.user.name} {user?.name == msg.user.name ? ' (You)' : ''}:
                 </span>{' '}
@@ -78,16 +98,22 @@ const ChatWindow = () => {
               {msg.content}
             </li>
           ))}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} aria-hidden={true} />
       </ul>
-      <input
-        type="text"
-        placeholder="Type a message..."
-        className="message-input"
-        disabled={isSending || !user}
-        onKeyDown={handleSendMessage}
-      />
-    </div>
+      <form onSubmit={(e) => e.preventDefault()} className="chat-form">
+        <label htmlFor="chat-input" className="sr-only">
+          Type your message
+        </label>
+        <input
+          id="chat-input"
+          type="text"
+          placeholder="Type a message..."
+          className="message-input"
+          disabled={isSending || !user}
+          onKeyDown={handleSendMessage}
+        />
+      </form>
+    </section>
   );
 };
 

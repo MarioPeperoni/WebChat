@@ -1,0 +1,15 @@
+header {
+  text-align: center;
+}
+
+header h1 {
+  margin-bottom: 0.2em;
+}
+
+header h2 {
+  margin-top: 0;
+  font-weight: normal;
+
+  font-size: 1.1em;
+  font-style: italic;
+}
