@@ -1,33 +1,11 @@
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI
+from starlette.middleware.cors import CORSMiddleware
 
-from datetime import datetime
-from pydantic import ValidationError
-
-from starlette.websockets import WebSocketDisconnect
-
-from services.database import save_message_to_db
-from services.websocket import ConnectionManager
-
-from models.message import MessageIn, MessageOut
+from routes import chat, user
 
 app = FastAPI()
 
-manager = ConnectionManager()
+app.include_router(chat.router)
+app.include_router(user.router)
 
-@app.websocket("/ws/chat")
-async def chat_endpoint(websocket: WebSocket):
-    await manager.connect(websocket)
-    try:
-        while True:
-            data = await websocket.receive_json()
-
-            try:
-                message_in = MessageIn(**data)
-            except ValidationError:
-                continue
-            message_out = MessageOut(**message_in.model_dump(mode="json"), timestamp=datetime.now().isoformat())
-            await save_message_to_db(message_out)
-            await manager.send_message(message_out.model_dump(mode="json"))
-
-    except WebSocketDisconnect:
-        manager.disconnect(websocket)
+app.add_middleware(CORSMiddleware, allow_origins=["*"])
