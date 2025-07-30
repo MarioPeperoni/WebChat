@@ -1,25 +1,16 @@
-from typing import List
-
 from fastapi import FastAPI, WebSocket
+
+from datetime import datetime
+from pydantic import ValidationError
+
 from starlette.websockets import WebSocketDisconnect
 
+from services.database import save_message_to_db
+from services.websocket import ConnectionManager
+
+from models.message import MessageIn, MessageOut
+
 app = FastAPI()
-
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[WebSocket] = []
-
-    async def connect(self, websocket: WebSocket):
-        await websocket.accept()
-        self.active_connections.append(websocket)
-
-    def disconnect(self, websocket: WebSocket):
-        if websocket in self.active_connections:
-            self.active_connections.remove(websocket)
-
-    async def send_message(self, message: dict):
-        for connection in self.active_connections:
-            await connection.send_json(message)
 
 manager = ConnectionManager()
 
@@ -29,6 +20,14 @@ async def chat_endpoint(websocket: WebSocket):
     try:
         while True:
             data = await websocket.receive_json()
-            await manager.send_message(data)
+
+            try:
+                message_in = MessageIn(**data)
+            except ValidationError as e:
+                continue
+            message_out = MessageOut(**message_in.model_dump(mode="json"), timestamp=datetime.now().isoformat())
+            await save_message_to_db(message_out)
+            await manager.send_message(message_out.model_dump(mode="json"))
+
     except WebSocketDisconnect:
         manager.disconnect(websocket)
