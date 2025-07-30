@@ -1,5 +1,4 @@
-from pydantic import BaseModel, Field, constr
-from datetime import datetime
+from pydantic import BaseModel, Field
 
 class User(BaseModel):
     name: str = Field(max_length=16, min_length=2)

@@ -23,7 +23,7 @@ async def chat_endpoint(websocket: WebSocket):
 
             try:
                 message_in = MessageIn(**data)
-            except ValidationError as e:
+            except ValidationError:
                 continue
             message_out = MessageOut(**message_in.model_dump(mode="json"), timestamp=datetime.now().isoformat())
             await save_message_to_db(message_out)

@@ -1,6 +1,7 @@
-from typing import List
 from fastapi import WebSocket
 from starlette.websockets import WebSocketState
+
+from typing import List
 
 class ConnectionManager:
     def __init__(self):
