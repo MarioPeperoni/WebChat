@@ -51,3 +51,10 @@ tmp/
 
 # ---- Static assets (built) ----
 public/build/
+
+# ---- Terraform ----
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+keys/
