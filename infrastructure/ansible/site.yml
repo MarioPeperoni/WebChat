@@ -4,5 +4,6 @@
     - docker
     - nginx
     - backend
+    - jenkins
   vars:
     ecr_url: "215012652815.dkr.ecr.eu-north-1.amazonaws.com"

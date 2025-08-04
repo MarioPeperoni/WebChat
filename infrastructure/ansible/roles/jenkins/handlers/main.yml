@@ -1,0 +1,9 @@
+- name: Reload Jenkins
+  service:
+    name: jenkins
+    state: restarted
+    enabled: yes
+
+- name: Reload systemd
+  command: systemctl daemon-reload
+  listen: Restart Jenkins

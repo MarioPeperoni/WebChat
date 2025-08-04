@@ -1,0 +1,43 @@
+- name: Add Jenkins repository
+  yum_repository:
+    name: jenkins
+    description: Jenkins Repository
+    baseurl: https://pkg.jenkins.io/redhat-stable/
+    gpgcheck: yes
+    gpgkey: https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+
+- name: Install Java 17
+  yum:
+    name: java-17-amazon-corretto
+    state: present
+    update_cache: yes
+
+- name: Install Jenkins package
+  yum:
+    name: jenkins
+    state: present
+    update_cache: yes
+
+- name: Create systemd override directory
+  file:
+    path: /etc/systemd/system/jenkins.service.d
+    state: directory
+    mode: 0755
+
+- name: Configure Jenkins context path via systemd
+  template:
+    src: jenkins-override.conf.j2
+    dest: /etc/systemd/system/jenkins.service.d/override.conf
+    owner: root
+    group: root
+    mode: 0644
+  notify: Reload systemd
+
+- name: Update Jenkins configuration
+  template:
+    src: jenkins-config.xml.j2
+    dest: /var/lib/jenkins/config.xml
+    owner: jenkins
+    group: jenkins
+    mode: 0640
+  notify: Restart Jenkins

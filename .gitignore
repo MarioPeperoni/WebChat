@@ -58,3 +58,6 @@ public/build/
 *.tfstate.*
 .terraform.lock.hcl
 keys/
+
+# ---- Ansible ----
+inventory/
