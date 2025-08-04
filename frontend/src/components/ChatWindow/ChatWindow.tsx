@@ -19,12 +19,16 @@ const ChatWindow = () => {
   const [isSending, startSending] = useTransition();
 
   useEffect(() => {
-    const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://127.0.0.1:8000/chat/ws`;
+    const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${
+      import.meta.env.VITE_BACKEND_URL
+    }/chat/ws`;
+
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
     socket.onopen = () => {
       console.log('WebSocket connection established');
+      if (user) setReady(true);
     };
 
     socket.onmessage = (event) => {
@@ -35,14 +39,7 @@ const ChatWindow = () => {
     return () => {
       socket.close();
     };
-  }, []);
-
-  useEffect(() => {
-    // Ensure the user is set and socket is connected
-    if (user && socketRef.current && !ready) {
-      setReady(true);
-    }
-  }, [user, ready]);
+  }, [user]);
 
   useEffect(() => {
     if (messagesEndRef.current) {
