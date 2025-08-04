@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import type { User } from '../types/user';
 
 async function getUser(): Promise<User> {
-  const res = await fetch('http://127.0.0.1:8000/user/assign');
+  const res = await fetch(`http://${import.meta.env.VITE_BACKEND_URL}/user/assign`);
   if (!res.ok) throw new Error('Failed to assign user');
   return res.json();
 }

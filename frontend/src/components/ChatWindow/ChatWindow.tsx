@@ -19,9 +19,7 @@ const ChatWindow = () => {
   const [isSending, startSending] = useTransition();
 
   useEffect(() => {
-    const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${
-      import.meta.env.VITE_BACKEND_URL
-    }/chat/ws`;
+    const wsUrl = `http://${import.meta.env.VITE_BACKEND_URL}/chat/ws`;
 
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
