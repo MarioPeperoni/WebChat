@@ -1,0 +1,20 @@
+- name: Auth to ECR repository
+  shell: |
+    aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin {{ ecr_url }}
+  register: ecr_login
+  changed_when: "'Login Succeeded' in ecr_login.stdout"
+
+- name: Pull Docker image from ECR
+  docker_image:
+    name: "{{ ecr_url }}/webchat-server"
+    tag: latest
+    source: pull
+
+- name: Start server
+  docker_container:
+    name: webchat-server
+    image: "{{ ecr_url }}/webchat-server:latest"
+    state: started
+    restart_policy: always
+    ports:
+      - "8000:8000"

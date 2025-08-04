@@ -1,0 +1,8 @@
+- hosts: ec2
+  become: true
+  roles:
+    - docker
+    - nginx
+    - backend
+  vars:
+    ecr_url: "215012652815.dkr.ecr.eu-north-1.amazonaws.com"

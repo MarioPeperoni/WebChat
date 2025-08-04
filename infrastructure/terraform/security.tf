@@ -153,5 +153,5 @@ resource "aws_iam_instance_profile" "webchat_instance_profile" {
 // Key pair for EC2 instances
 resource "aws_key_pair" "webchat_key" {
   key_name   = "webchat-key"
-  public_key = file("${path.module}/keys/webchat-key.pub")
+  public_key = file("../keys/webchat-key.pub")
 }

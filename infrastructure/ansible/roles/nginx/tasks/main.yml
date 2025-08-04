@@ -1,0 +1,16 @@
+- name: Install Nginx
+  yum:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Load Nginx site configuration
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/conf.d/webchat.conf
+
+- name: Start Nginx service
+  service:
+    name: nginx
+    state: started
+    enabled: yes

@@ -1,0 +1,11 @@
+- name: Install Docker
+  yum:
+    name: docker
+    state: present
+    update_cache: yes
+
+- name: Staret Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
