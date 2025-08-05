@@ -1,6 +1,6 @@
-resource "aws_security_group" "webchat_sg" {
-  name        = "webchat-sg"
-  description = "Allow HTTP, HTTPS, SSH, Jenkins and backend access"
+resource "aws_security_group" "webchat_backend_sg" {
+  name        = "webchat-backend-sg"
+  description = "Allow HTTP, HTTPS, SSH"
   vpc_id      = aws_vpc.webchat_vpc.id
 
   tags = {
@@ -10,7 +10,7 @@ resource "aws_security_group" "webchat_sg" {
 
 resource "aws_vpc_security_group_ingress_rule" "webchat_ssh_rule" {
   description       = "Allow SSH access"
-  security_group_id = aws_security_group.webchat_sg.id
+  security_group_id = aws_security_group.webchat_backend_sg.id
 
   from_port   = 22
   to_port     = 22
@@ -24,7 +24,7 @@ resource "aws_vpc_security_group_ingress_rule" "webchat_ssh_rule" {
 
 resource "aws_vpc_security_group_ingress_rule" "webchat_http_rule" {
   description       = "Allow HTTP access"
-  security_group_id = aws_security_group.webchat_sg.id
+  security_group_id = aws_security_group.webchat_backend_sg.id
 
   from_port   = 80
   to_port     = 80
@@ -38,7 +38,7 @@ resource "aws_vpc_security_group_ingress_rule" "webchat_http_rule" {
 
 resource "aws_vpc_security_group_ingress_rule" "webchat_https_rule" {
   description       = "Allow HTTPS access"
-  security_group_id = aws_security_group.webchat_sg.id
+  security_group_id = aws_security_group.webchat_backend_sg.id
 
   from_port   = 443
   to_port     = 443
@@ -50,37 +50,9 @@ resource "aws_vpc_security_group_ingress_rule" "webchat_https_rule" {
   }
 }
 
-resource "aws_vpc_security_group_ingress_rule" "webchat_jenkins_rule" {
-  description       = "Allow Jenkins access"
-  security_group_id = aws_security_group.webchat_sg.id
-
-  from_port   = 8080
-  to_port     = 8080
-  ip_protocol = "tcp"
-  cidr_ipv4   = "0.0.0.0/0"
-
-  tags = {
-    Project = "webchat"
-  }
-}
-
-resource "aws_vpc_security_group_ingress_rule" "webchat_backend_rule" {
-  description       = "Allow backend access"
-  security_group_id = aws_security_group.webchat_sg.id
-
-  from_port   = 8000
-  to_port     = 8000
-  ip_protocol = "tcp"
-  cidr_ipv4   = "0.0.0.0/0"
-
-  tags = {
-    Project = "webchat"
-  }
-}
-
 resource "aws_vpc_security_group_egress_rule" "webchat_egress_rule" {
   description       = "Allow all outbound traffic"
-  security_group_id = aws_security_group.webchat_sg.id
+  security_group_id = aws_security_group.webchat_backend_sg.id
 
   from_port   = -1
   to_port     = -1

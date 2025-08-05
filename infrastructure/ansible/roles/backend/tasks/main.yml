@@ -1,3 +1,15 @@
+- name: Install Nginx
+  yum:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: Load Nginx site configuration
+  template:
+    src: nginx.conf.j2
+    dest: /etc/nginx/conf.d/webchat.conf
+  notify: Reload Nginx
+
 - name: Auth to ECR repository
   shell: |
     aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin {{ ecr_url }}
