@@ -22,6 +22,16 @@
   border-top: 1px solid #000;
   font-size: 14px;
   pointer-events: auto;
+  border-radius: 0;
+  outline: none;
+  box-shadow: none;
+  touch-action: manipulation;
+}
+
+@media (pointer: coarse) {
+  .message-input {
+    font-size: 16px;
+  }
 }
 
 .chat-form {
