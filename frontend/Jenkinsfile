@@ -1,0 +1,45 @@
+pipeline {
+    agent any
+
+    environment {
+        S3_BUCKET = 'webchat-frontend-bucket'
+        AWS_REGION = 'eu-north-1'
+        EC2_PUBLIC_IP = ''
+    }
+
+    stages {
+        stage("Checkout") {
+            steps {
+                git credentialsId: 'github-creds-id', url: 'https://github.com/MarioPeperoni/WebChat.git', branch: 'main'
+            }
+        }
+
+        stage("Inject Environment Variables") {
+            steps {
+                dir('frontend') {
+                    sh """
+                        echo "VITE_BACKEND_URL=${env.EC2_PUBLIC_IP}" > .env
+                    """
+                }
+            }
+        }
+
+        stage("Build Static Files") {
+            steps {
+                dir('frontend') {
+                    sh 'bun install'
+                    sh 'bun run build'
+                }
+            }
+        }
+
+        stage("Deploy to S3") {
+            steps {
+                dir("frontend/dist") {
+                    sh "aws s3 sync . s3://${env.S3_BUCKET} --region ${env.AWS_REGION} --delete"
+                }
+            }
+        }
+    }
+    
+}
