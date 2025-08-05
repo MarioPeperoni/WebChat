@@ -9,6 +9,7 @@ import type { Message } from '../../types/message';
 const ChatWindow = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
 
   const user = useUser();
 
@@ -48,18 +49,21 @@ const ChatWindow = () => {
   const handleSendMessage = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && socketRef.current && user) {
       startSending(() => {
-        const messageContent = (event.target as HTMLInputElement).value.trim();
+        const messageContent = event.currentTarget.value.trim();
 
         if (!messageContent) return;
 
         const message: Message = {
-          user: user,
+          user,
           content: messageContent,
         };
 
         socketRef.current!.send(JSON.stringify(message));
 
-        (event.target as HTMLInputElement).value = '';
+        event.currentTarget.value = '';
+
+        // Re-focus the input manually for mobile
+        inputRef.current?.focus();
       });
     }
   };
@@ -100,6 +104,7 @@ const ChatWindow = () => {
           Type your message
         </label>
         <input
+          ref={inputRef}
           id="chat-input"
           type="text"
           placeholder="Type a message..."

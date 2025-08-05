@@ -1,6 +1,7 @@
 .chat-container {
   border: 1px solid #000;
   display: flex;
+  position: relative;
   height: 100%;
   flex-direction: column;
   margin: 0 0 20px 0;
@@ -8,7 +9,7 @@
 }
 
 .message-list {
-  overflow-y: scroll;
+  overflow-y: auto;
   min-height: 0;
   flex: 1;
   list-style-type: none;
@@ -20,6 +21,7 @@
   border: none;
   border-top: 1px solid #000;
   font-size: 14px;
+  pointer-events: auto;
 }
 
 .chat-form {
