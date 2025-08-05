@@ -8,12 +8,6 @@ pipeline {
     }
 
     stages {
-        stage("Checkout") {
-            steps {
-                git credentialsId: 'github-creds-id', url: 'https://github.com/MarioPeperoni/WebChat.git', branch: 'main'
-            }
-        }
-
         stage("Inject Environment Variables") {
             steps {
                 dir('frontend') {
@@ -35,8 +29,13 @@ pipeline {
 
         stage("Deploy to S3") {
             steps {
-                dir("frontend/dist") {
-                    sh "aws s3 sync . s3://${env.S3_BUCKET} --region ${env.AWS_REGION} --delete"
+                withAWS(credentials:'aws-credentials'){
+                    s3Upload(
+                        bucket: env.S3_BUCKET,
+                        path: '',
+                        includePathPattern: '**/*',
+                        workingDir: 'frontend/dist',
+                    )
                 }
             }
         }
