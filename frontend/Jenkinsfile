@@ -1,24 +1,32 @@
 pipeline {
     agent any
 
+    parameters {
+        string(name: 'EC2_PUBLIC_IP', defaultValue: '', description: 'Public IP of the EC2 instance for backend URL')
+        string(name: 'S3_BUCKET', defaultValue: 'webchat-frontend-bucket', description: 'Name of the S3 bucket for the client')
+    }
     environment {
-        S3_BUCKET = 'webchat-frontend-bucket'
         AWS_REGION = 'eu-north-1'
-        EC2_PUBLIC_IP = ''
     }
 
     stages {
-        stage("Inject Environment Variables") {
+        stage('Checkout Code') {
+            steps {
+                git branch: 'main', url: 'https://github.com/MarioPeperoni/WebChat'
+            }
+        }
+
+        stage('Inject Environment Variables') {
             steps {
                 dir('frontend') {
-                    sh """
-                        echo "VITE_BACKEND_URL=${env.EC2_PUBLIC_IP}" > .env
-                    """
+                    sh '''
+                        echo "VITE_BACKEND_URL=${EC2_PUBLIC_IP}" > .env
+                    '''
                 }
             }
         }
 
-        stage("Build Static Files") {
+        stage('Build Static Files') {
             steps {
                 dir('frontend') {
                     sh 'bun install'
@@ -29,9 +37,9 @@ pipeline {
 
         stage("Deploy to S3") {
             steps {
-                withAWS(credentials:'aws-credentials'){
+                withAWS(credentials: 'aws-credentials') {
                     s3Upload(
-                        bucket: env.S3_BUCKET,
+                        bucket: "${S3_BUCKET}",
                         path: '',
                         includePathPattern: '**/*',
                         workingDir: 'frontend/dist',
@@ -40,5 +48,10 @@ pipeline {
             }
         }
     }
-    
+
+    post {
+        always {
+            cleanWs()
+        }
+    }
 }
