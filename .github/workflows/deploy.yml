@@ -15,7 +15,7 @@ jobs:
     outputs:
       ecr_repository_url: ${{ steps.ecr.outputs.repository_url }}
       ec2_ip: ${{ steps.ec2.outputs.public_ip }}
-      s3_endpoint: ${{ steps.s3.outputs.s3_endpoint }}
+      s3_name: ${{ steps.s3.outputs.s3_name }}
     env:
       OUTPUT_FILE: terraform-outputs.json
     steps:
@@ -59,7 +59,7 @@ jobs:
       - name: Set S3 Bucket
         id: s3
         working-directory: infrastructure/terraform
-        run: echo "s3_endpoint=$(jq -r '.s3_endpoint.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
+        run: echo "s3_name=$(jq -r '.s3_name.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
 
   ansible:
     name: Configure EC2 with Ansible
@@ -153,6 +153,6 @@ jobs:
 
       - name: Deploy to S3
         env:
-          S3_ENDPOINT: ${{ needs.terraform.outputs.s3_endpoint }}
+          S3_ENDPOINT: ${{ needs.terraform.outputs.s3_name }}
         run: |
           aws s3 sync ./frontend/dist s3://$S3_ENDPOINT --delete
