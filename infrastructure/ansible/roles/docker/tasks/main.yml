@@ -1,11 +1,14 @@
 - name: Install Docker
-  yum:
-    name: docker
+  dnf:
+    name:
+      - docker
+      - python3-pip
+      - python3-docker
     state: present
     update_cache: yes
 
-- name: Start Docker service
-  service:
+- name: Enable and start Docker
+  systemd:
     name: docker
     state: started
     enabled: yes

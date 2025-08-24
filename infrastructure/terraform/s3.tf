@@ -41,3 +41,8 @@ resource "aws_s3_bucket_policy" "webchat_frontend_policy" {
     ]
   })
 }
+
+output "s3_endpoint" {
+  description = "Public endpoint for the WebChat client on S3"
+  value       = aws_s3_bucket_website_configuration.webchat_frontend_website.website_endpoint
+}

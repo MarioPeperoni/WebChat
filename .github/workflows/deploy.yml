@@ -1,0 +1,152 @@
+name: Build and Deploy WebChat
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: 'eu-north-1'
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    outputs:
+      ecr_repository_url: ${{ steps.ecr.outputs.repository_url }}
+      ec2_ip: ${{ steps.ec2.outputs.public_ip }}
+      s3_endpoint: ${{ steps.s3.outputs.s3_endpoint }}
+    env:
+      OUTPUT_FILE: terraform-outputs.json
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.SSH_PUBLIC_KEY }}" > ~/.ssh/webchat_key.pub
+          chmod 600 ~/.ssh/webchat_key.pub
+
+      - name: Terraform Init and Apply
+        id: terraform
+        working-directory: infrastructure/terraform
+        run: |
+          terraform init
+          terraform apply -auto-approve
+          terraform output -json > $OUTPUT_FILE
+
+      - name: Set Repository URL
+        id: ecr
+        working-directory: infrastructure/terraform
+        run: echo "repository_url=$(jq -r '.ecr_repository_url.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
+
+      - name: Set EC2 IP
+        id: ec2
+        working-directory: infrastructure/terraform
+        run: echo "public_ip=$(jq -r '.ec2_ip.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
+
+      - name: Set S3 Bucket
+        id: s3
+        working-directory: infrastructure/terraform
+        run: echo "s3_endpoint=$(jq -r '.s3_endpoint.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
+
+  ansible:
+    runs-on: ubuntu-latest
+    needs: [terraform, build_and_push_backend]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Install Ansible
+        shell: bash
+        run: |
+          sudo apt update
+          sudo apt install -y ansible
+
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" | base64 -d > ~/.ssh/webchat-key.pem
+          chmod 600 ~/.ssh/webchat-key.pem
+
+      - name: Generate Ansible inventory
+        working-directory: infrastructure/ansible/inventory
+        run: |
+          echo "[webchat_server]" > hosts.ini
+          echo "${{ needs.terraform.outputs.ec2_ip }} ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/webchat-key.pem" >> hosts.ini
+
+      - name: Run Ansible Playbook
+        working-directory: infrastructure/ansible
+        run: |
+          ansible-playbook -i inventory/hosts.ini site.yml \
+            -e "ecr_url=${{ needs.terraform.outputs.ecr_repository_url }}"
+
+  build_and_push_backend:
+    runs-on: ubuntu-latest
+    needs: terraform
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Log in to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag, and push backend Docker image to Amazon ECR
+        env:
+          ECR_REPOSITORY_URL: ${{ needs.terraform.outputs.ecr_repository_url }}
+        run: |
+          docker build -t webchat-backend ./backend --platform linux/amd64
+          docker tag webchat-backend:latest $ECR_REPOSITORY_URL:latest
+          docker push $ECR_REPOSITORY_URL:latest
+
+  build_and_push_frontend:
+    runs-on: ubuntu-latest
+    needs: terraform
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v3
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Inject environment variables
+        working-directory: ./frontend
+        run: |
+          echo "VITE_BACKEND_URL=${{ needs.terraform.outputs.ec2_ip }}" > .env
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: bun install
+
+      - name: Build static files
+        working-directory: ./frontend
+        run: bun run build
+
+      - name: Deploy to S3
+        env:
+          S3_ENDPOINT: ${{ needs.terraform.outputs.s3_endpoint }}
+        run: |
+          aws s3 sync ./frontend/dist s3://$S3_ENDPOINT --delete

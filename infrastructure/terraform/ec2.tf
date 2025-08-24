@@ -13,7 +13,7 @@ resource "aws_instance" "webchat_ec2" {
   }
 }
 
-output "webchat_ec2_public_ip" {
+output "ec2_ip" {
   description = "Public IP of the WebChat EC2 instance"
   value       = aws_instance.webchat_ec2.public_ip
 }

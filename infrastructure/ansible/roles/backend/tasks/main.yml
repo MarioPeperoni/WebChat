@@ -1,32 +1,22 @@
-- name: Install Nginx
-  yum:
-    name: nginx
-    state: present
-    update_cache: yes
-
-- name: Load Nginx site configuration
-  template:
-    src: nginx.conf.j2
-    dest: /etc/nginx/conf.d/webchat.conf
-  notify: Reload Nginx
-
-- name: Auth to ECR repository
+- name: Authenticate to ECR
   shell: |
-    aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin {{ ecr_url }}
+    aws ecr get-login-password --region eu-north-1 | \
+    docker login --username AWS --password-stdin {{ ecr_url }}
   register: ecr_login
   changed_when: "'Login Succeeded' in ecr_login.stdout"
 
-- name: Pull Docker image from ECR
+- name: Pull latest backend image
   docker_image:
-    name: "{{ ecr_url }}/webchat-server"
-    tag: latest
+    name: "{{ ecr_url }}:latest"
     source: pull
+    force_source: true
 
-- name: Start server
+- name: Run backend container
   docker_container:
-    name: webchat-server
-    image: "{{ ecr_url }}/webchat-server:latest"
+    name: webchat-backend
+    image: "{{ ecr_url }}:latest"
     state: started
     restart_policy: always
+    recreate: true
     ports:
       - "8000:8000"
