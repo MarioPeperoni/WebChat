@@ -46,3 +46,8 @@ output "s3_name" {
   description = "S3 Bucket Name"
   value       = aws_s3_bucket.webchat_frontend.bucket
 }
+
+output "s3_endpoint" {
+  description = "S3 Website Endpoint"
+  value       = aws_s3_bucket_website_configuration.webchat_frontend_website.website_endpoint
+}
