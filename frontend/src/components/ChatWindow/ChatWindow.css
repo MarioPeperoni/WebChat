@@ -25,7 +25,6 @@
   border-radius: 0;
   outline: none;
   box-shadow: none;
-  touch-action: manipulation;
 }
 
 @media (pointer: coarse) {

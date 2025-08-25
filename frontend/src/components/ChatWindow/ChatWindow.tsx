@@ -44,6 +44,8 @@ const ChatWindow = () => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
+
+    inputRef.current?.focus();
   }, [messages]);
 
   const handleSendMessage = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -61,9 +63,6 @@ const ChatWindow = () => {
         socketRef.current!.send(JSON.stringify(message));
 
         event.currentTarget.value = '';
-
-        // Re-focus the input manually for mobile
-        inputRef.current?.focus();
       });
     }
   };
@@ -104,6 +103,7 @@ const ChatWindow = () => {
           Type your message
         </label>
         <input
+          autoFocus
           ref={inputRef}
           id="chat-input"
           type="text"
