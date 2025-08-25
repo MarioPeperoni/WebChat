@@ -13,10 +13,10 @@ jobs:
     name: Terraform Setup
     runs-on: ubuntu-latest
     outputs:
-      ecr_repository_url: ${{ steps.ecr.outputs.repository_url }}
-      ec2_ip: ${{ steps.ec2.outputs.public_ip }}
-      s3_name: ${{ steps.s3.outputs.s3_name }}
-      s3_endpoint: ${{ steps.s3.outputs.s3_endpoint }}
+      ecr_repository_url: ${{ steps.set_outputs.outputs.ecr_repository_url }}
+      ec2_ip: ${{ steps.set_outputs.outputs.ec2_ip }}
+      s3_name: ${{ steps.set_outputs.outputs.s3_name }}
+      s3_endpoint: ${{ steps.set_outputs.outputs.s3_endpoint }}
     env:
       OUTPUT_FILE: terraform-outputs.json
     steps:
@@ -47,24 +47,14 @@ jobs:
           terraform apply -auto-approve
           terraform output -json > $OUTPUT_FILE
 
-      - name: Set Repository URL
-        id: ecr
+      - name: Export Terraform Outputs
+        id: set_outputs
         working-directory: infrastructure/terraform
-        run: echo "repository_url=$(jq -r '.ecr_repository_url.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
-
-      - name: Set EC2 IP
-        id: ec2
-        working-directory: infrastructure/terraform
-        run: echo "public_ip=$(jq -r '.ec2_ip.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
-
-      - name: Set S3 Bucket name
-        id: s3
-        working-directory: infrastructure/terraform
-        run: echo "s3_name=$(jq -r '.s3_name.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
-
-      - name: Set S3 Bucket URL
-        working-directory: infrastructure/terraform
-        run: echo "s3_endpoint=$(jq -r '.s3_endpoint.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
+        run: |
+          echo "ecr_repository_url=$(jq -r '.ecr_repository_url.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
+          echo "ec2_ip=$(jq -r '.ec2_ip.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
+          echo "s3_name=$(jq -r '.s3_name.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
+          echo "s3_endpoint=$(jq -r '.s3_endpoint.value' $OUTPUT_FILE)" >> $GITHUB_OUTPUT
 
   ansible:
     name: Configure EC2 with Ansible
@@ -87,8 +77,9 @@ jobs:
           chmod 600 ~/.ssh/webchat-key.pem
 
       - name: Generate Ansible inventory
-        working-directory: infrastructure/ansible/inventory
+        working-directory: infrastructure/ansible
         run: |
+          mkdir -p inventory && cd inventory
           echo "[webchat_server]" > hosts.ini
           echo "${{ needs.terraform.outputs.ec2_ip }} ansible_user=ec2-user ansible_ssh_private_key_file=~/.ssh/webchat-key.pem" >> hosts.ini
 
