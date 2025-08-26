@@ -14,13 +14,12 @@ from app.models.message import MessageIn, MessageOut
 manager = ConnectionManager()
 router = APIRouter(prefix="/chat", tags=["chat"])
 
-@router.websocket("/ws")
+@router.websocket("/messages")
 async def chat_endpoint(websocket: WebSocket):
     await manager.connect(websocket)
     try:
         while True:
             data = await websocket.receive_json()
-
             try:
                 message_in = MessageIn(**data)
             except ValidationError:
@@ -30,4 +29,4 @@ async def chat_endpoint(websocket: WebSocket):
             await manager.send_message(message_out.model_dump(mode="json"))
 
     except WebSocketDisconnect:
-        manager.disconnect(websocket)
+        await manager.disconnect(websocket)

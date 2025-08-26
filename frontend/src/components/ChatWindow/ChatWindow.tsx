@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { useUser } from '../../hooks/useUser';
+
+import OnlineCount from '../OnlineCount/OnlineCount';
 
 import './ChatWindow.css';
-
-import { useUser } from '../../hooks/useUser';
 
 import type { Message } from '../../types/message';
 
@@ -14,14 +15,14 @@ const ChatWindow = () => {
   const user = useUser();
 
   const [messages, setMessages] = useState<Message[]>();
+  const [userCount, setUserCount] = useState(0);
 
   const [ready, setReady] = useState(false);
 
   const [isSending, startSending] = useTransition();
 
   useEffect(() => {
-    const wsUrl = `http://${import.meta.env.VITE_BACKEND_URL}/chat/ws`;
-
+    const wsUrl = `ws://${import.meta.env.VITE_BACKEND_URL}/chat/messages`;
     const socket = new WebSocket(wsUrl);
     socketRef.current = socket;
 
@@ -32,7 +33,15 @@ const ChatWindow = () => {
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      setMessages((prevMessages) => [...(prevMessages || []), data]);
+
+      switch (data.type) {
+        case 'message':
+          setMessages((prevMessages) => [...(prevMessages || []), data.data]);
+          break;
+        case 'users_count':
+          setUserCount(data.count);
+          break;
+      }
     };
 
     return () => {
@@ -69,6 +78,7 @@ const ChatWindow = () => {
 
   return (
     <section className="chat-container">
+      <OnlineCount count={userCount} />
       <ul className="message-list">
         <li>
           {ready ? (

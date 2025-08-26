@@ -1,0 +1,12 @@
+.online-count {
+  border-left: 1px solid #000;
+  border-bottom: 1px solid #000;
+  position: fixed;
+  right: 9px;
+  padding: 5px 10px;
+}
+
+.online-number {
+  font-weight: bold;
+  color: green;
+}
