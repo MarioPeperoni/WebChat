@@ -7,6 +7,10 @@ import './ChatWindow.css';
 
 import type { Message } from '../../types/message';
 
+const MAX_MESSAGE_LENGTH = 256;
+const RECONNECT_BASE_MS = 1000;
+const RECONNECT_MAX_MS = 30000;
+
 const ChatWindow = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -16,64 +20,90 @@ const ChatWindow = () => {
 
   const [messages, setMessages] = useState<Message[]>();
   const [userCount, setUserCount] = useState(0);
-
   const [ready, setReady] = useState(false);
 
   const [isSending, startSending] = useTransition();
 
   useEffect(() => {
-    const wsUrl = `ws://${import.meta.env.VITE_BACKEND_URL}/chat/messages`;
-    const socket = new WebSocket(wsUrl);
-    socketRef.current = socket;
+    if (!user) return;
 
-    socket.onopen = () => {
-      console.log('WebSocket connection established');
-      if (user) setReady(true);
+    let cancelled = false;
+    let attempt = 0;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const connect = () => {
+      if (cancelled) return;
+
+      const socket = new WebSocket(import.meta.env.VITE_WS_URL);
+      socketRef.current = socket;
+
+      socket.onopen = () => {
+        attempt = 0;
+        setReady(true);
+      };
+
+      socket.onmessage = (event) => {
+        const data = JSON.parse(event.data);
+        switch (data.type) {
+          case 'message':
+            setMessages((prev) => [...(prev ?? []), data.data]);
+            break;
+          case 'users_count':
+            setUserCount(data.count);
+            break;
+        }
+      };
+
+      socket.onclose = () => {
+        setReady(false);
+        if (cancelled) return;
+        const delay = Math.min(
+          RECONNECT_MAX_MS,
+          RECONNECT_BASE_MS * 2 ** attempt,
+        );
+        attempt += 1;
+        reconnectTimer = setTimeout(connect, delay);
+      };
+
+      socket.onerror = () => {
+        socket.close();
+      };
     };
 
-    socket.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-
-      switch (data.type) {
-        case 'message':
-          setMessages((prevMessages) => [...(prevMessages || []), data.data]);
-          break;
-        case 'users_count':
-          setUserCount(data.count);
-          break;
-      }
-    };
+    connect();
 
     return () => {
-      socket.close();
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      socketRef.current?.close();
+      socketRef.current = null;
     };
   }, [user]);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     inputRef.current?.focus();
   }, [messages]);
 
   const handleSendMessage = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key === 'Enter' && socketRef.current && user) {
-      startSending(() => {
-        const messageContent = event.currentTarget.value.trim();
+    if (event.key !== 'Enter' || !user) return;
+    const socket = socketRef.current;
+    if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
-        if (!messageContent) return;
+    startSending(() => {
+      const content = event.currentTarget.value.trim().slice(0, MAX_MESSAGE_LENGTH);
+      if (!content) return;
 
-        const message: Message = {
+      socket.send(
+        JSON.stringify({
+          action: 'sendmessage',
           user,
-          content: messageContent,
-        };
+          content,
+        }),
+      );
 
-        socketRef.current!.send(JSON.stringify(message));
-
-        event.currentTarget.value = '';
-      });
-    }
+      event.currentTarget.value = '';
+    });
   };
 
   return (
@@ -119,7 +149,8 @@ const ChatWindow = () => {
           type="text"
           placeholder="Type a message..."
           className="message-input"
-          disabled={isSending || !user}
+          maxLength={MAX_MESSAGE_LENGTH}
+          disabled={isSending || !ready}
           onKeyDown={handleSendMessage}
         />
       </form>

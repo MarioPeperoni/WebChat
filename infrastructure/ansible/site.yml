@@ -1,8 +1,0 @@
-- hosts: webchat_server
-  become: true
-  vars:
-    ecr_url: "{{ ecr_url }}"
-  roles:
-    - docker
-    - nginx
-    - backend

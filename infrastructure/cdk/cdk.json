@@ -1,0 +1,22 @@
+{
+  "app": "npx ts-node --prefer-ts-exts bin/webchat.ts",
+  "watch": {
+    "include": ["**"],
+    "exclude": [
+      "README.md",
+      "cdk*.json",
+      "**/*.d.ts",
+      "**/*.js",
+      "tsconfig.json",
+      "package*.json",
+      "node_modules"
+    ]
+  },
+  "context": {
+    "appName": "webchat",
+    "githubOwner": "MarioPeperoni",
+    "githubRepo": "WebChat",
+    "frontendCertArn": "arn:aws:acm:us-east-1:521495323361:certificate/0faba436-1294-4f7f-89d4-d9942d9d40c7",
+    "apiCertArn": "arn:aws:acm:eu-central-1:521495323361:certificate/15908b0a-d58f-44bf-ae58-faf1e6eafb40"
+  }
+}

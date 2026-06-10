@@ -1,11 +1,10 @@
-# ---- Node (Vite frontend) ----
+# ---- Node ----
 node_modules/
 dist/
 .vite/
 *.log
 .env
 .env.*
-
 
 # ---- Vite cache ----
 .cache/
@@ -19,45 +18,14 @@ Thumbs.db
 .vscode/
 .idea/
 
-# ---- Python (FastAPI backend) ----
-__pycache__/
-*.py[cod]
-*.pyo
-*.egg-info/
-*.eggs/
-build/
-dist/
-venv/
-.env/
-*.sqlite3
-*.db
-*.log
-
-# ---- Pyright / TypeScript / React ----
+# ---- TypeScript ----
 *.tsbuildinfo
 *.tscache/
 *.eslintcache
 
-# ---- Testing / coverage ----
-coverage/
-htmlcov/
-.tox/
-.pytest_cache/
+# ---- CDK ----
+cdk.out/
+cdk-outputs.json
 
-# ---- Optional socket message log or temp storage ----
-*.sock
-*.pid
-tmp/
-
-# ---- Static assets (built) ----
+# ---- Build artifacts ----
 public/build/
-
-# ---- Terraform ----
-.terraform/
-*.tfstate
-*.tfstate.*
-.terraform.lock.hcl
-keys/
-
-# ---- Ansible ----
-inventory/

@@ -1,0 +1,1 @@
+export { getEndpointFromEvent } from './endpoint';
