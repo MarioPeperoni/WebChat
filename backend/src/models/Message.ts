@@ -1,10 +1,6 @@
 import { z } from 'zod';
 
 export const IncomingMessageSchema = z.object({
-  user: z.object({
-    name: z.string().min(2).max(32),
-    color: z.string().optional(),
-  }),
   content: z.string().min(1).max(256),
 });
 

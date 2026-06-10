@@ -6,7 +6,7 @@ import {
 
 import type { ConnectionsRepository } from '@/repositories';
 import { IncomingMessageSchema, type IncomingMessage, type OutgoingMessage } from '@/models';
-import type { Logger } from '@/utils/logging';
+import type { Logger } from '@/utils';
 
 export class ChatService {
   constructor(
@@ -25,10 +25,16 @@ export class ChatService {
     }
   }
 
-  async broadcast(message: IncomingMessage, endpoint: string): Promise<void> {
+  async broadcast(connectionId: string, content: string, endpoint: string): Promise<void> {
+    const user = await this.connections.getUser(connectionId);
+    if (!user) {
+      this.logger.warn('sendmessage from unknown connection', { connectionId });
+      return;
+    }
+
     const outgoing: OutgoingMessage = {
-      user: { name: message.user.name, color: message.user.color ?? '#000000' },
-      content: message.content,
+      user,
+      content,
       timestamp: new Date().toISOString(),
     };
 
@@ -38,19 +44,19 @@ export class ChatService {
     const connectionIds = await this.connections.listAll();
 
     await Promise.all(
-      connectionIds.map(async (connectionId) => {
+      connectionIds.map(async (id) => {
         try {
           await api.send(
             new PostToConnectionCommand({
-              ConnectionId: connectionId,
+              ConnectionId: id,
               Data: payload,
             }),
           );
         } catch (err) {
           if (err instanceof GoneException) {
-            await this.connections.remove(connectionId);
+            await this.connections.remove(id);
           } else {
-            this.logger.error('PostToConnection failed', { connectionId, err });
+            this.logger.error('PostToConnection failed', { connectionId: id, err });
           }
         }
       }),

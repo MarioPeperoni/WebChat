@@ -5,7 +5,7 @@ import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
 
-import type { CustomDomainProps } from './HttpApi';
+import type { CustomDomainProps } from './WebSocketApi';
 
 export interface FrontendHostingProps {
   customDomain?: CustomDomainProps;

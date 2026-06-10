@@ -6,4 +6,3 @@ export {
   NotFoundResponse,
   InternalServerErrorResponse,
 } from './responses';
-export { corsHeaders } from './cors';

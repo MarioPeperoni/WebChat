@@ -33,7 +33,12 @@ class Container {
 
   get presenceService(): PresenceService {
     if (!this._presenceService) {
-      this._presenceService = new PresenceService(this.connectionsRepository);
+      this._presenceService = new PresenceService(
+        this.connectionsRepository,
+        this.userService,
+        (endpoint) => new ApiGatewayManagementApiClient({ endpoint }),
+        this.logger,
+      );
     }
     return this._presenceService;
   }

@@ -3,12 +3,16 @@ import {
   DynamoDBDocumentClient,
   PutCommand,
   DeleteCommand,
+  GetCommand,
   paginateScan,
 } from '@aws-sdk/lib-dynamodb';
 
+import type { AssignedUser } from '@/models';
+
 export interface ConnectionsRepository {
-  add(connectionId: string): Promise<void>;
+  add(connectionId: string, user: AssignedUser): Promise<void>;
   remove(connectionId: string): Promise<void>;
+  getUser(connectionId: string): Promise<AssignedUser | null>;
   listAll(): Promise<string[]>;
 }
 
@@ -24,12 +28,14 @@ export class DynamoDbConnectionsRepository implements ConnectionsRepository {
     this.client = client ?? DynamoDBDocumentClient.from(new DynamoDBClient({}));
   }
 
-  async add(connectionId: string): Promise<void> {
+  async add(connectionId: string, user: AssignedUser): Promise<void> {
     await this.client.send(
       new PutCommand({
         TableName: this.tableName,
         Item: {
           connectionId,
+          nickname: user.name,
+          color: user.color,
           expiresAt: Math.floor(Date.now() / 1000) + TTL_SECONDS,
         },
       }),
@@ -43,6 +49,21 @@ export class DynamoDbConnectionsRepository implements ConnectionsRepository {
         Key: { connectionId },
       }),
     );
+  }
+
+  async getUser(connectionId: string): Promise<AssignedUser | null> {
+    const result = await this.client.send(
+      new GetCommand({
+        TableName: this.tableName,
+        Key: { connectionId },
+        ProjectionExpression: 'nickname, color',
+      }),
+    );
+    const item = result.Item;
+    if (!item || typeof item.nickname !== 'string' || typeof item.color !== 'string') {
+      return null;
+    }
+    return { name: item.nickname, color: item.color };
   }
 
   async listAll(): Promise<string[]> {

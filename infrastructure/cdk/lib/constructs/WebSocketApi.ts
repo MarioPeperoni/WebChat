@@ -5,12 +5,16 @@ import { WebSocketLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integra
 import type { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 
-import type { CustomDomainProps } from './HttpApi';
+export interface CustomDomainProps {
+  name: string;
+  certArn: string;
+}
 
 export interface WebSocketApiProps {
   appName: string;
   connectFn: NodejsFunction;
   disconnectFn: NodejsFunction;
+  helloFn: NodejsFunction;
   sendMessageFn: NodejsFunction;
   customDomain?: CustomDomainProps;
 }
@@ -33,6 +37,10 @@ export class WebSocketApi extends Construct {
       },
     });
 
+    this.api.addRoute('hello', {
+      integration: new WebSocketLambdaIntegration('HelloIntegration', props.helloFn),
+    });
+
     this.api.addRoute('sendmessage', {
       integration: new WebSocketLambdaIntegration('SendMessageIntegration', props.sendMessageFn),
     });
@@ -43,6 +51,9 @@ export class WebSocketApi extends Construct {
       autoDeploy: true,
     });
 
+    this.api.grantManageConnections(props.connectFn);
+    this.api.grantManageConnections(props.disconnectFn);
+    this.api.grantManageConnections(props.helloFn);
     this.api.grantManageConnections(props.sendMessageFn);
 
     if (props.customDomain) {

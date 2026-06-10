@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
-import { useUser } from '../../hooks/useUser';
 
 import OnlineCount from '../OnlineCount/OnlineCount';
 
 import './ChatWindow.css';
 
 import type { Message } from '../../types/message';
+import type { User } from '../../types/user';
 
 const MAX_MESSAGE_LENGTH = 256;
 const RECONNECT_BASE_MS = 1000;
@@ -16,8 +16,7 @@ const ChatWindow = () => {
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const user = useUser();
-
+  const [user, setUser] = useState<User | null>(null);
   const [messages, setMessages] = useState<Message[]>();
   const [userCount, setUserCount] = useState(0);
   const [ready, setReady] = useState(false);
@@ -25,8 +24,6 @@ const ChatWindow = () => {
   const [isSending, startSending] = useTransition();
 
   useEffect(() => {
-    if (!user) return;
-
     let cancelled = false;
     let attempt = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -39,17 +36,22 @@ const ChatWindow = () => {
 
       socket.onopen = () => {
         attempt = 0;
-        setReady(true);
+        socket.send(JSON.stringify({ action: 'hello' }));
       };
 
       socket.onmessage = (event) => {
         const data = JSON.parse(event.data);
         switch (data.type) {
-          case 'message':
-            setMessages((prev) => [...(prev ?? []), data.data]);
+          case 'hello':
+            setUser(data.user);
+            setUserCount(data.count);
+            setReady(true);
             break;
           case 'users_count':
             setUserCount(data.count);
+            break;
+          case 'message':
+            setMessages((prev) => [...(prev ?? []), data.data]);
             break;
         }
       };
@@ -78,7 +80,7 @@ const ChatWindow = () => {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -86,7 +88,7 @@ const ChatWindow = () => {
   }, [messages]);
 
   const handleSendMessage = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== 'Enter' || !user) return;
+    if (event.key !== 'Enter') return;
     const socket = socketRef.current;
     if (!socket || socket.readyState !== WebSocket.OPEN) return;
 
@@ -97,7 +99,6 @@ const ChatWindow = () => {
       socket.send(
         JSON.stringify({
           action: 'sendmessage',
-          user,
           content,
         }),
       );
@@ -111,10 +112,10 @@ const ChatWindow = () => {
       <OnlineCount count={userCount} />
       <ul className="message-list">
         <li>
-          {ready ? (
+          {ready && user ? (
             <>
               Connected to the chatroom as{' '}
-              <strong style={{ color: user!.color }}>{user!.name}</strong>.
+              <strong style={{ color: user.color }}>{user.name}</strong>.
             </>
           ) : (
             'Connecting to chatroom...'

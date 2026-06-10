@@ -16,6 +16,10 @@ export const handler = async (
   const message = container.chatService.parse(event.body);
   if (!message) return BadRequestResponse('invalid message');
 
-  await container.chatService.broadcast(message, getEndpointFromEvent(event));
+  await container.chatService.broadcast(
+    event.requestContext.connectionId,
+    message.content,
+    getEndpointFromEvent(event),
+  );
   return OkResponse();
 };

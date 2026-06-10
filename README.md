@@ -1,11 +1,10 @@
 # WebChat
 
-Serverless real-time chat on AWS. React frontend on CloudFront, REST + WebSocket Lambdas behind API Gateway, DynamoDB for connection IDs.
+Serverless real-time chat on AWS. React frontend on CloudFront, WebSocket Lambdas behind API Gateway, DynamoDB for connections + nick assignment.
 
 | Layer | URL | Backed by |
 |---|---|---|
 | Frontend | `https://chat.mthings.online` | S3 + CloudFront + OAC |
-| REST | `https://api.chat.mthings.online` | HTTP API → Lambda |
 | WebSocket | `wss://ws.chat.mthings.online` | WebSocket API → Lambda + DynamoDB |
 
 Primary region: `eu-central-1`. CloudFront cert lives in `us-east-1` (AWS requirement).
@@ -22,9 +21,8 @@ npm ci
 npx cdk bootstrap aws://<ACCOUNT_ID>/eu-central-1
 
 # 2. Issue ACM certificates (Console or aws acm request-certificate):
-#    - us-east-1   : chat.mthings.online                       (CloudFront)
-#    - eu-central-1: api.chat.mthings.online +
-#                    ws.chat.mthings.online                    (single SAN cert)
+#    - us-east-1   : chat.mthings.online      (CloudFront)
+#    - eu-central-1: ws.chat.mthings.online   (API Gateway custom domain)
 #    Validate each one with a CNAME at your domain registrar.
 
 # 3. Paste the two ARNs into infrastructure/cdk/cdk.json (context.frontendCertArn, context.apiCertArn).
@@ -48,10 +46,7 @@ npx cdk deploy WebChatStack --outputs-file cdk-outputs.json
 # Frontend
 cd ../../frontend
 bun install
-cat > .env <<EOF
-VITE_API_URL=https://api.chat.mthings.online
-VITE_WS_URL=wss://ws.chat.mthings.online
-EOF
+echo "VITE_WS_URL=wss://ws.chat.mthings.online" > .env
 bun run build
 
 BUCKET=$(jq -r '.WebChatStack.FrontendBucketName' ../infrastructure/cdk/cdk-outputs.json)
@@ -62,12 +57,11 @@ aws cloudfront create-invalidation --distribution-id $DIST --paths '/*'
 
 ## DNS — once, after the first deploy
 
-Read these from the CDK outputs and set three CNAMEs at the registrar:
+Read these from the CDK outputs and set two CNAMEs at the registrar:
 
 | Host | Value |
 |---|---|
 | `chat` | `FrontendDistributionDomain` |
-| `api.chat` | `HttpDomainTarget` |
 | `ws.chat` | `WsDomainTarget` |
 
 ## Local frontend dev
@@ -75,12 +69,9 @@ Read these from the CDK outputs and set three CNAMEs at the registrar:
 ```bash
 cd frontend
 bun install
-echo "VITE_API_URL=https://api.chat.mthings.online" > .env
-echo "VITE_WS_URL=wss://ws.chat.mthings.online" >> .env
-bun run dev    # http://localhost:5173 hits the deployed API
+echo "VITE_WS_URL=wss://ws.chat.mthings.online" > .env
+bun run dev    # http://localhost:5173 hits the deployed WebSocket
 ```
-
-To allow `localhost` in CORS: redeploy with `--context allowedOrigins=https://chat.mthings.online,http://localhost:5173`.
 
 ## Tear-down
 

@@ -13,13 +13,12 @@ const TS_PROJECT = path.join(BACKEND_ROOT, 'tsconfig.json');
 export interface ChatLambdasProps {
   appName: string;
   connectionsTable: dynamodb.Table;
-  allowedOrigins: string[];
 }
 
 export class ChatLambdas extends Construct {
-  readonly assignUser: NodejsFunction;
   readonly connect: NodejsFunction;
   readonly disconnect: NodejsFunction;
+  readonly hello: NodejsFunction;
   readonly sendMessage: NodejsFunction;
 
   constructor(scope: Construct, id: string, props: ChatLambdasProps) {
@@ -28,6 +27,7 @@ export class ChatLambdas extends Construct {
     const baseEnv = {
       POWERTOOLS_SERVICE_NAME: props.appName,
       POWERTOOLS_LOG_LEVEL: 'INFO',
+      CONNECTIONS_TABLE: props.connectionsTable.tableName,
     };
 
     const defaults = {
@@ -38,40 +38,35 @@ export class ChatLambdas extends Construct {
       projectRoot: BACKEND_ROOT,
       depsLockFilePath: path.join(BACKEND_ROOT, 'package-lock.json'),
       bundling: { target: 'node22', minify: true, sourceMap: true, tsconfig: TS_PROJECT },
+      environment: baseEnv,
     } as const;
-
-    this.assignUser = new NodejsFunction(this, 'AssignUserFn', {
-      ...defaults,
-      entry: path.join(HANDLERS_ROOT, 'user', 'assignUser.ts'),
-      handler: 'handler',
-      environment: {
-        ...baseEnv,
-        ALLOWED_ORIGINS: props.allowedOrigins.join(','),
-      },
-    });
 
     this.connect = new NodejsFunction(this, 'ConnectFn', {
       ...defaults,
       entry: path.join(HANDLERS_ROOT, 'chat', 'connect.ts'),
       handler: 'handler',
-      environment: { ...baseEnv, CONNECTIONS_TABLE: props.connectionsTable.tableName },
     });
-    props.connectionsTable.grantWriteData(this.connect);
+    props.connectionsTable.grantReadWriteData(this.connect);
 
     this.disconnect = new NodejsFunction(this, 'DisconnectFn', {
       ...defaults,
       entry: path.join(HANDLERS_ROOT, 'chat', 'disconnect.ts'),
       handler: 'handler',
-      environment: { ...baseEnv, CONNECTIONS_TABLE: props.connectionsTable.tableName },
     });
-    props.connectionsTable.grantWriteData(this.disconnect);
+    props.connectionsTable.grantReadWriteData(this.disconnect);
+
+    this.hello = new NodejsFunction(this, 'HelloFn', {
+      ...defaults,
+      entry: path.join(HANDLERS_ROOT, 'chat', 'hello.ts'),
+      handler: 'handler',
+    });
+    props.connectionsTable.grantReadData(this.hello);
 
     this.sendMessage = new NodejsFunction(this, 'SendMessageFn', {
       ...defaults,
       entry: path.join(HANDLERS_ROOT, 'chat', 'sendMessage.ts'),
       handler: 'handler',
       timeout: cdk.Duration.seconds(15),
-      environment: { ...baseEnv, CONNECTIONS_TABLE: props.connectionsTable.tableName },
     });
     props.connectionsTable.grantReadWriteData(this.sendMessage);
   }

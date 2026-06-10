@@ -5,16 +5,13 @@ import {
   ChatLambdas,
   ConnectionsTable,
   FrontendHosting,
-  HttpApi,
   WebSocketApi,
 } from './constructs';
 
 export interface WebChatStackProps extends cdk.StackProps {
   appName: string;
   rootDomain: string;
-  apiSubdomain: string;
   wsSubdomain: string;
-  allowedOrigins: string[];
   frontendCertArn?: string;
   apiCertArn?: string;
 }
@@ -30,22 +27,13 @@ export class WebChatStack extends cdk.Stack {
     const lambdas = new ChatLambdas(this, 'Lambdas', {
       appName: props.appName,
       connectionsTable: connections.table,
-      allowedOrigins: props.allowedOrigins,
-    });
-
-    const httpApi = new HttpApi(this, 'HttpApi', {
-      appName: props.appName,
-      assignUserFn: lambdas.assignUser,
-      allowedOrigins: props.allowedOrigins,
-      customDomain: props.apiCertArn
-        ? { name: props.apiSubdomain, certArn: props.apiCertArn }
-        : undefined,
     });
 
     const wsApi = new WebSocketApi(this, 'WsApi', {
       appName: props.appName,
       connectFn: lambdas.connect,
       disconnectFn: lambdas.disconnect,
+      helloFn: lambdas.hello,
       sendMessageFn: lambdas.sendMessage,
       customDomain: props.apiCertArn
         ? { name: props.wsSubdomain, certArn: props.apiCertArn }
@@ -58,7 +46,6 @@ export class WebChatStack extends cdk.Stack {
         : undefined,
     });
 
-    new cdk.CfnOutput(this, 'HttpApiUrl', { value: httpApi.api.apiEndpoint });
     new cdk.CfnOutput(this, 'WsApiUrl', { value: wsApi.stage.url });
     new cdk.CfnOutput(this, 'FrontendBucketName', { value: frontend.bucket.bucketName });
     new cdk.CfnOutput(this, 'FrontendDistributionId', {

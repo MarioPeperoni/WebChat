@@ -1,14 +1,23 @@
-import type {
-  APIGatewayProxyWebsocketEventV2,
-  APIGatewayProxyResultV2,
-} from 'aws-lambda';
+import type { APIGatewayProxyResultV2 } from 'aws-lambda';
 
 import { container } from '@/container';
-import { OkResponse } from '@/utils';
+import {
+  OkResponse,
+  getEndpointFromEvent,
+  extractClientInfo,
+  type WebSocketConnectEvent,
+} from '@/utils';
 
 export const handler = async (
-  event: APIGatewayProxyWebsocketEventV2,
+  event: WebSocketConnectEvent,
 ): Promise<APIGatewayProxyResultV2> => {
-  await container.presenceService.register(event.requestContext.connectionId);
+  const { ip, userAgent } = extractClientInfo(event);
+
+  await container.presenceService.register(
+    event.requestContext.connectionId,
+    ip,
+    userAgent,
+    getEndpointFromEvent(event),
+  );
   return OkResponse();
 };

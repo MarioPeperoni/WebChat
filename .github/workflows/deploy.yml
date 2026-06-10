@@ -17,7 +17,6 @@ jobs:
     name: Deploy CDK stack
     runs-on: ubuntu-latest
     outputs:
-      http_api_url: ${{ steps.outputs.outputs.http_api_url }}
       ws_api_url: ${{ steps.outputs.outputs.ws_api_url }}
       frontend_bucket: ${{ steps.outputs.outputs.frontend_bucket }}
       distribution_id: ${{ steps.outputs.outputs.distribution_id }}
@@ -55,7 +54,6 @@ jobs:
         working-directory: infrastructure/cdk
         run: |
           jq -r '.WebChatStack | to_entries[] | "\(.key)=\(.value)"' cdk-outputs.json
-          echo "http_api_url=$(jq -r '.WebChatStack.HttpApiUrl' cdk-outputs.json)" >> $GITHUB_OUTPUT
           echo "ws_api_url=$(jq -r '.WebChatStack.WsApiUrl' cdk-outputs.json)" >> $GITHUB_OUTPUT
           echo "frontend_bucket=$(jq -r '.WebChatStack.FrontendBucketName' cdk-outputs.json)" >> $GITHUB_OUTPUT
           echo "distribution_id=$(jq -r '.WebChatStack.FrontendDistributionId' cdk-outputs.json)" >> $GITHUB_OUTPUT
@@ -80,8 +78,7 @@ jobs:
       - name: Inject environment variables
         working-directory: ./frontend
         run: |
-          echo "VITE_API_URL=https://api.chat.mthings.online" > .env
-          echo "VITE_WS_URL=wss://ws.chat.mthings.online" >> .env
+          echo "VITE_WS_URL=wss://ws.chat.mthings.online" > .env
 
       - name: Install dependencies
         working-directory: ./frontend
