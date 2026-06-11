@@ -1,0 +1,20 @@
+{
+  "name": "webchat",
+  "version": "1.0.0",
+  "description": "Serverless real-time chat on AWS. React frontend on CloudFront, WebSocket Lambdas behind API Gateway, DynamoDB for connections + nick assignment.",
+  "private": true,
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MarioPeperoni/WebChat.git"
+  },
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MarioPeperoni/WebChat/issues"
+  },
+  "homepage": "https://github.com/MarioPeperoni/WebChat#readme"
+}

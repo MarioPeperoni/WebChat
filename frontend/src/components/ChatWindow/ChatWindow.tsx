@@ -4,8 +4,7 @@ import OnlineCount from '../OnlineCount/OnlineCount';
 
 import './ChatWindow.css';
 
-import type { Message } from '../../types/message';
-import type { User } from '../../types/user';
+import type { ChatMessage, User } from '@webchat/shared';
 
 const MAX_MESSAGE_LENGTH = 256;
 const RECONNECT_BASE_MS = 1000;
@@ -17,7 +16,7 @@ const ChatWindow = () => {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [user, setUser] = useState<User | null>(null);
-  const [messages, setMessages] = useState<Message[]>();
+  const [messages, setMessages] = useState<ChatMessage[]>();
   const [userCount, setUserCount] = useState(0);
   const [ready, setReady] = useState(false);
 
@@ -122,21 +121,35 @@ const ChatWindow = () => {
           )}
         </li>
         {messages &&
-          messages.map((msg, index) => (
-            <li key={index}>
-              <strong>
-                <span
-                  style={{
-                    color: msg.user.color,
-                  }}
-                  aria-label={`Message from ${msg.user.name}`}
-                >
-                  {msg.user.name} {user?.name == msg.user.name ? ' (You)' : ''}:
-                </span>{' '}
-              </strong>
-              {msg.content}
-            </li>
-          ))}
+          messages.map((msg, index) =>
+            msg.kind === 'system' ? (
+              <li key={index} className="message-system">
+                {msg.segments.map((seg, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      color: seg.color,
+                      fontWeight: seg.bold ? 'bold' : undefined,
+                    }}
+                  >
+                    {seg.text}
+                  </span>
+                ))}
+              </li>
+            ) : (
+              <li key={index}>
+                <strong>
+                  <span
+                    style={{ color: msg.user.color }}
+                    aria-label={`Message from ${msg.user.name}`}
+                  >
+                    {msg.user.name} {user?.name == msg.user.name ? ' (You)' : ''}:
+                  </span>{' '}
+                </strong>
+                {msg.content}
+              </li>
+            ),
+          )}
         <div ref={messagesEndRef} aria-hidden={true} />
       </ul>
       <form onSubmit={(e) => e.preventDefault()} className="chat-form">

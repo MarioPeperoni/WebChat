@@ -1,17 +1,14 @@
-import {
-  ApiGatewayManagementApiClient,
-  PostToConnectionCommand,
-  GoneException,
-} from '@aws-sdk/client-apigatewaymanagementapi';
+import type { ChatMessage, MessageSegment } from '@webchat/shared';
 
 import type { ConnectionsRepository } from '@/repositories';
-import { IncomingMessageSchema, type IncomingMessage, type OutgoingMessage } from '@/models';
+import type { WebSocketBroadcaster } from '@/services';
+import { IncomingMessageSchema, type IncomingMessage } from '@/models';
 import type { Logger } from '@/utils';
 
 export class ChatService {
   constructor(
     private readonly connections: ConnectionsRepository,
-    private readonly apiClientFactory: (endpoint: string) => ApiGatewayManagementApiClient,
+    private readonly broadcaster: WebSocketBroadcaster,
     private readonly logger: Logger,
   ) {}
 
@@ -32,34 +29,31 @@ export class ChatService {
       return;
     }
 
-    const outgoing: OutgoingMessage = {
+    const message: ChatMessage = {
+      kind: 'user',
       user,
       content,
       timestamp: new Date().toISOString(),
     };
 
-    const api = this.apiClientFactory(endpoint);
-    const payload = Buffer.from(JSON.stringify({ type: 'message', data: outgoing }));
-
     const connectionIds = await this.connections.listAll();
-
-    await Promise.all(
-      connectionIds.map(async (id) => {
-        try {
-          await api.send(
-            new PostToConnectionCommand({
-              ConnectionId: id,
-              Data: payload,
-            }),
-          );
-        } catch (err) {
-          if (err instanceof GoneException) {
-            await this.connections.remove(id);
-          } else {
-            this.logger.error('PostToConnection failed', { connectionId: id, err });
-          }
-        }
-      }),
-    );
+    await this.broadcaster.send(connectionIds, { type: 'message', data: message }, endpoint);
   }
+
+  async broadcastSystemToOthers(
+    excludeConnectionId: string,
+    segments: MessageSegment[],
+    endpoint: string,
+  ): Promise<void> {
+    const message: ChatMessage = {
+      kind: 'system',
+      segments,
+      timestamp: new Date().toISOString(),
+    };
+
+    const all = await this.connections.listAll();
+    const others = all.filter((id) => id !== excludeConnectionId);
+    await this.broadcaster.send(others, { type: 'message', data: message }, endpoint);
+  }
+
 }

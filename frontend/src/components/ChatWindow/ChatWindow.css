@@ -16,6 +16,10 @@
   padding-left: 1em;
 }
 
+.message-system {
+  font-style: italic;
+}
+
 .message-input {
   padding: 6px 1em 6px 1em;
   border: none;

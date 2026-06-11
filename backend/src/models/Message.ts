@@ -5,9 +5,3 @@ export const IncomingMessageSchema = z.object({
 });
 
 export type IncomingMessage = z.infer<typeof IncomingMessageSchema>;
-
-export type OutgoingMessage = {
-  user: { name: string; color: string };
-  content: string;
-  timestamp: string;
-};

@@ -7,12 +7,12 @@ import {
   paginateScan,
 } from '@aws-sdk/lib-dynamodb';
 
-import type { AssignedUser } from '@/models';
+import type { User } from '@webchat/shared';
 
 export interface ConnectionsRepository {
-  add(connectionId: string, user: AssignedUser): Promise<void>;
+  add(connectionId: string, user: User): Promise<void>;
   remove(connectionId: string): Promise<void>;
-  getUser(connectionId: string): Promise<AssignedUser | null>;
+  getUser(connectionId: string): Promise<User | null>;
   listAll(): Promise<string[]>;
 }
 
@@ -28,7 +28,7 @@ export class DynamoDbConnectionsRepository implements ConnectionsRepository {
     this.client = client ?? DynamoDBDocumentClient.from(new DynamoDBClient({}));
   }
 
-  async add(connectionId: string, user: AssignedUser): Promise<void> {
+  async add(connectionId: string, user: User): Promise<void> {
     await this.client.send(
       new PutCommand({
         TableName: this.tableName,
@@ -51,7 +51,7 @@ export class DynamoDbConnectionsRepository implements ConnectionsRepository {
     );
   }
 
-  async getUser(connectionId: string): Promise<AssignedUser | null> {
+  async getUser(connectionId: string): Promise<User | null> {
     const result = await this.client.send(
       new GetCommand({
         TableName: this.tableName,

@@ -1,10 +1,13 @@
-import { ApiGatewayManagementApiClient } from '@aws-sdk/client-apigatewaymanagementapi';
-
 import {
   DynamoDbConnectionsRepository,
   type ConnectionsRepository,
 } from '@/repositories';
-import { UserService, PresenceService, ChatService } from '@/services';
+import {
+  UserService,
+  PresenceService,
+  ChatService,
+  WebSocketBroadcaster,
+} from '@/services';
 import { logger, type Logger } from '@/utils/logging';
 
 class Container {
@@ -12,6 +15,7 @@ class Container {
   private _userService?: UserService;
   private _presenceService?: PresenceService;
   private _chatService?: ChatService;
+  private _webSocketBroadcaster?: WebSocketBroadcaster;
 
   get logger(): Logger {
     return logger;
@@ -31,27 +35,38 @@ class Container {
     return this._userService;
   }
 
-  get presenceService(): PresenceService {
-    if (!this._presenceService) {
-      this._presenceService = new PresenceService(
+  get webSocketBroadcaster(): WebSocketBroadcaster {
+    if (!this._webSocketBroadcaster) {
+      this._webSocketBroadcaster = new WebSocketBroadcaster(
         this.connectionsRepository,
-        this.userService,
-        (endpoint) => new ApiGatewayManagementApiClient({ endpoint }),
         this.logger,
       );
     }
-    return this._presenceService;
+    return this._webSocketBroadcaster;
   }
 
   get chatService(): ChatService {
     if (!this._chatService) {
       this._chatService = new ChatService(
         this.connectionsRepository,
-        (endpoint) => new ApiGatewayManagementApiClient({ endpoint }),
+        this.webSocketBroadcaster,
         this.logger,
       );
     }
     return this._chatService;
+  }
+
+  get presenceService(): PresenceService {
+    if (!this._presenceService) {
+      this._presenceService = new PresenceService(
+        this.connectionsRepository,
+        this.userService,
+        this.chatService,
+        this.webSocketBroadcaster,
+        this.logger,
+      );
+    }
+    return this._presenceService;
   }
 }
 

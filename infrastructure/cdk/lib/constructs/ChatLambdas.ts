@@ -6,7 +6,8 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 
-const BACKEND_ROOT = path.join(__dirname, '..', '..', '..', '..', 'backend');
+const WORKSPACE_ROOT = path.join(__dirname, '..', '..', '..', '..');
+const BACKEND_ROOT = path.join(WORKSPACE_ROOT, 'backend');
 const HANDLERS_ROOT = path.join(BACKEND_ROOT, 'src', 'handlers');
 const TS_PROJECT = path.join(BACKEND_ROOT, 'tsconfig.json');
 
@@ -35,9 +36,9 @@ export class ChatLambdas extends Construct {
       architecture: lambda.Architecture.ARM_64,
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
-      projectRoot: BACKEND_ROOT,
-      depsLockFilePath: path.join(BACKEND_ROOT, 'package-lock.json'),
-      bundling: { target: 'node22', minify: true, sourceMap: true, tsconfig: TS_PROJECT },
+      projectRoot: WORKSPACE_ROOT,
+      depsLockFilePath: path.join(WORKSPACE_ROOT, 'package-lock.json'),
+      bundling: { target: 'node22', minify: false, sourceMap: true, tsconfig: TS_PROJECT },
       environment: baseEnv,
     } as const;
 

@@ -5,7 +5,7 @@ import {
   animals,
 } from 'unique-names-generator';
 
-import type { AssignedUser } from '@/models';
+import type { User } from '@webchat/shared';
 
 const COLORS = [
   '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
@@ -14,7 +14,7 @@ const COLORS = [
 ];
 
 export class UserService {
-  assignFor(ip: string, userAgent: string): AssignedUser {
+  assignFor(ip: string, userAgent: string): User {
     const fingerprint = createHash('sha256').update(`${ip}|${userAgent}`).digest();
     const seed = fingerprint.readUInt32BE(0);
 
