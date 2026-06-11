@@ -29,15 +29,17 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
       - name: Configure AWS credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Install backend dependencies
-        working-directory: backend
-        run: npm ci
+      - name: Install workspace dependencies
+        run: bun install --frozen-lockfile
 
       - name: Install CDK dependencies
         working-directory: infrastructure/cdk
@@ -82,8 +84,7 @@ jobs:
         run: |
           echo "VITE_WS_URL=wss://ws.chat.mthings.online" > .env
 
-      - name: Install dependencies
-        working-directory: ./frontend
+      - name: Install workspace dependencies
         run: bun install --frozen-lockfile
 
       - name: Build static files

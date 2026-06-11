@@ -36,7 +36,7 @@ export class ApiLambdas extends Construct {
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
       projectRoot: WORKSPACE_ROOT,
-      depsLockFilePath: path.join(WORKSPACE_ROOT, 'package-lock.json'),
+      depsLockFilePath: path.join(WORKSPACE_ROOT, 'bun.lock'),
       bundling: { target: 'node22', minify: false, sourceMap: true, tsconfig: TS_PROJECT },
       environment: baseEnv,
     } as const;
