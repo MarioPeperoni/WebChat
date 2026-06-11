@@ -4,18 +4,27 @@ import OnlineCount from '../OnlineCount/OnlineCount';
 
 import './ChatWindow.css';
 
-import type { ChatMessage, User } from '@webchat/shared';
+import type { ChatMessage, UserPublic } from '@webchat/shared';
 
 const MAX_MESSAGE_LENGTH = 256;
 const RECONNECT_BASE_MS = 1000;
 const RECONNECT_MAX_MS = 30000;
+const USER_ID_STORAGE_KEY = 'webchat:userId';
+
+function ensureUserId(): string {
+  const existing = localStorage.getItem(USER_ID_STORAGE_KEY);
+  if (existing) return existing;
+  const fresh = crypto.randomUUID();
+  localStorage.setItem(USER_ID_STORAGE_KEY, fresh);
+  return fresh;
+}
 
 const ChatWindow = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserPublic | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>();
   const [userCount, setUserCount] = useState(0);
   const [ready, setReady] = useState(false);
@@ -23,6 +32,7 @@ const ChatWindow = () => {
   const [isSending, startSending] = useTransition();
 
   useEffect(() => {
+    const userId = ensureUserId();
     let cancelled = false;
     let attempt = 0;
     let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
@@ -30,7 +40,9 @@ const ChatWindow = () => {
     const connect = () => {
       if (cancelled) return;
 
-      const socket = new WebSocket(import.meta.env.VITE_WS_URL);
+      const socket = new WebSocket(
+        `${import.meta.env.VITE_WS_URL}?userId=${userId}`,
+      );
       socketRef.current = socket;
 
       socket.onopen = () => {
@@ -48,6 +60,9 @@ const ChatWindow = () => {
             break;
           case 'users_count':
             setUserCount(data.count);
+            break;
+          case 'user_updated':
+            if (data.user.userId === userId) setUser(data.user);
             break;
           case 'message':
             setMessages((prev) => [...(prev ?? []), data.data]);
@@ -143,7 +158,8 @@ const ChatWindow = () => {
                     style={{ color: msg.user.color }}
                     aria-label={`Message from ${msg.user.name}`}
                   >
-                    {msg.user.name} {user?.name == msg.user.name ? ' (You)' : ''}:
+                    {msg.user.name}
+                    {user?.userId === msg.user.userId ? ' (You)' : ''}:
                   </span>{' '}
                 </strong>
                 {msg.content}

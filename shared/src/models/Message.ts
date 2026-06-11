@@ -1,4 +1,4 @@
-import type { User } from './User';
+import type { UserPublic } from './User';
 
 export type MessageSegment = {
   text: string;
@@ -8,7 +8,7 @@ export type MessageSegment = {
 
 export type ChatUserMessage = {
   kind: 'user';
-  user: User;
+  user: UserPublic;
   content: string;
   timestamp: string;
 };

@@ -24,6 +24,7 @@ new WebChatStack(app, 'WebChatStack', {
   appName,
   rootDomain: app.node.tryGetContext('rootDomain') ?? 'chat.mthings.online',
   wsSubdomain: app.node.tryGetContext('wsSubdomain') ?? 'ws.chat.mthings.online',
+  apiSubdomain: app.node.tryGetContext('apiSubdomain') ?? 'api.chat.mthings.online',
   frontendCertArn: app.node.tryGetContext('frontendCertArn'),
   apiCertArn: app.node.tryGetContext('apiCertArn'),
 });

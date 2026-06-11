@@ -1,6 +1,6 @@
 export { getEndpointFromEvent } from './endpoint';
 export {
-  extractClientInfo,
+  extractUserId,
+  extractPresence,
   type WebSocketConnectEvent,
-  type ClientInfo,
 } from './events';

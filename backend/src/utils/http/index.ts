@@ -6,3 +6,4 @@ export {
   NotFoundResponse,
   InternalServerErrorResponse,
 } from './responses';
+export { safeJson } from './parsing';

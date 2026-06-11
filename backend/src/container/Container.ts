@@ -1,6 +1,7 @@
 import {
-  DynamoDbConnectionsRepository,
-  type ConnectionsRepository,
+  UsersRepository,
+  PresenceRepository,
+  ConnectionsRepository,
 } from '@/repositories';
 import {
   UserService,
@@ -11,21 +12,43 @@ import {
 import { logger, type Logger } from '@/utils/logging';
 
 class Container {
+  private readonly tableName: string;
+
+  private _usersRepository?: UsersRepository;
+  private _presenceRepository?: PresenceRepository;
   private _connectionsRepository?: ConnectionsRepository;
   private _userService?: UserService;
   private _presenceService?: PresenceService;
   private _chatService?: ChatService;
   private _webSocketBroadcaster?: WebSocketBroadcaster;
 
+  constructor() {
+    const name = process.env.CHAT_TABLE;
+    if (!name) throw new Error('CHAT_TABLE env var is required');
+    this.tableName = name;
+  }
+
   get logger(): Logger {
     return logger;
   }
 
+  get usersRepository(): UsersRepository {
+    if (!this._usersRepository) {
+      this._usersRepository = new UsersRepository(this.tableName);
+    }
+    return this._usersRepository;
+  }
+
+  get presenceRepository(): PresenceRepository {
+    if (!this._presenceRepository) {
+      this._presenceRepository = new PresenceRepository(this.tableName);
+    }
+    return this._presenceRepository;
+  }
+
   get connectionsRepository(): ConnectionsRepository {
     if (!this._connectionsRepository) {
-      const tableName = process.env.CONNECTIONS_TABLE;
-      if (!tableName) throw new Error('CONNECTIONS_TABLE env var is required');
-      this._connectionsRepository = new DynamoDbConnectionsRepository(tableName);
+      this._connectionsRepository = new ConnectionsRepository(this.tableName);
     }
     return this._connectionsRepository;
   }
@@ -48,6 +71,7 @@ class Container {
   get chatService(): ChatService {
     if (!this._chatService) {
       this._chatService = new ChatService(
+        this.usersRepository,
         this.connectionsRepository,
         this.webSocketBroadcaster,
         this.logger,
@@ -59,6 +83,8 @@ class Container {
   get presenceService(): PresenceService {
     if (!this._presenceService) {
       this._presenceService = new PresenceService(
+        this.usersRepository,
+        this.presenceRepository,
         this.connectionsRepository,
         this.userService,
         this.chatService,
@@ -68,6 +94,7 @@ class Container {
     }
     return this._presenceService;
   }
+
 }
 
 export const container = new Container();

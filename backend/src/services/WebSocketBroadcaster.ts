@@ -27,13 +27,19 @@ export class WebSocketBroadcaster {
           await api.send(new PostToConnectionCommand({ ConnectionId: id, Data: data }));
         } catch (err) {
           if (err instanceof GoneException) {
-            await this.connections.remove(id);
+            await this.cleanupDead(id);
           } else {
             this.logger.error('PostToConnection failed', { connectionId: id, err });
           }
         }
       }),
     );
+  }
+
+  private async cleanupDead(connectionId: string): Promise<void> {
+    const meta = await this.connections.lookup(connectionId);
+    if (!meta) return;
+    await this.connections.remove(connectionId, meta.roomId);
   }
 
   private clientFor(endpoint: string): ApiGatewayManagementApiClient {

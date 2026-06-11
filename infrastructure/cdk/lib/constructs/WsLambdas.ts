@@ -11,24 +11,24 @@ const BACKEND_ROOT = path.join(WORKSPACE_ROOT, 'backend');
 const HANDLERS_ROOT = path.join(BACKEND_ROOT, 'src', 'handlers');
 const TS_PROJECT = path.join(BACKEND_ROOT, 'tsconfig.json');
 
-export interface ChatLambdasProps {
+export interface WsLambdasProps {
   appName: string;
-  connectionsTable: dynamodb.Table;
+  chatTable: dynamodb.Table;
 }
 
-export class ChatLambdas extends Construct {
+export class WsLambdas extends Construct {
   readonly connect: NodejsFunction;
   readonly disconnect: NodejsFunction;
   readonly hello: NodejsFunction;
   readonly sendMessage: NodejsFunction;
 
-  constructor(scope: Construct, id: string, props: ChatLambdasProps) {
+  constructor(scope: Construct, id: string, props: WsLambdasProps) {
     super(scope, id);
 
     const baseEnv = {
       POWERTOOLS_SERVICE_NAME: props.appName,
       POWERTOOLS_LOG_LEVEL: 'INFO',
-      CONNECTIONS_TABLE: props.connectionsTable.tableName,
+      CHAT_TABLE: props.chatTable.tableName,
     };
 
     const defaults = {
@@ -47,21 +47,21 @@ export class ChatLambdas extends Construct {
       entry: path.join(HANDLERS_ROOT, 'chat', 'connect.ts'),
       handler: 'handler',
     });
-    props.connectionsTable.grantReadWriteData(this.connect);
+    props.chatTable.grantReadWriteData(this.connect);
 
     this.disconnect = new NodejsFunction(this, 'DisconnectFn', {
       ...defaults,
       entry: path.join(HANDLERS_ROOT, 'chat', 'disconnect.ts'),
       handler: 'handler',
     });
-    props.connectionsTable.grantReadWriteData(this.disconnect);
+    props.chatTable.grantReadWriteData(this.disconnect);
 
     this.hello = new NodejsFunction(this, 'HelloFn', {
       ...defaults,
       entry: path.join(HANDLERS_ROOT, 'chat', 'hello.ts'),
       handler: 'handler',
     });
-    props.connectionsTable.grantReadData(this.hello);
+    props.chatTable.grantReadData(this.hello);
 
     this.sendMessage = new NodejsFunction(this, 'SendMessageFn', {
       ...defaults,
@@ -69,6 +69,6 @@ export class ChatLambdas extends Construct {
       handler: 'handler',
       timeout: cdk.Duration.seconds(15),
     });
-    props.connectionsTable.grantReadWriteData(this.sendMessage);
+    props.chatTable.grantReadWriteData(this.sendMessage);
   }
 }

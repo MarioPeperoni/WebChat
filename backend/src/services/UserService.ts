@@ -5,7 +5,9 @@ import {
   animals,
 } from 'unique-names-generator';
 
-import type { User } from '@webchat/shared';
+import type { User, UserPublic } from '@webchat/shared';
+
+import type { ConnectPresence } from '@/models';
 
 const COLORS = [
   '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
@@ -14,8 +16,12 @@ const COLORS = [
 ];
 
 export class UserService {
-  assignFor(ip: string, userAgent: string): User {
-    const fingerprint = createHash('sha256').update(`${ip}|${userAgent}`).digest();
+  generateInitialProfile(
+    userId: string,
+    presence: ConnectPresence,
+    now: string,
+  ): User {
+    const fingerprint = createHash('sha256').update(userId).digest();
     const seed = fingerprint.readUInt32BE(0);
 
     const name = uniqueNamesGenerator({
@@ -27,6 +33,21 @@ export class UserService {
 
     const color = COLORS[fingerprint.readUInt16BE(4) % COLORS.length]!;
 
-    return { name, color };
+    return {
+      userId,
+      name,
+      color,
+      metadata: {
+        firstSeenAt: now,
+        lastSeenAt: now,
+        country: presence.country,
+        lastIp: presence.ip,
+        lastUserAgent: presence.userAgent,
+      },
+    };
+  }
+
+  static toPublic(user: User): UserPublic {
+    return { userId: user.userId, name: user.name, color: user.color };
   }
 }

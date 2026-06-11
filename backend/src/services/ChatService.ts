@@ -1,12 +1,14 @@
 import type { ChatMessage, MessageSegment } from '@webchat/shared';
 
-import type { ConnectionsRepository } from '@/repositories';
+import type { ConnectionsRepository, UsersRepository } from '@/repositories';
 import type { WebSocketBroadcaster } from '@/services';
+import { UserService } from '@/services/UserService';
 import { IncomingMessageSchema, type IncomingMessage } from '@/models';
 import type { Logger } from '@/utils';
 
 export class ChatService {
   constructor(
+    private readonly users: UsersRepository,
     private readonly connections: ConnectionsRepository,
     private readonly broadcaster: WebSocketBroadcaster,
     private readonly logger: Logger,
@@ -22,26 +24,33 @@ export class ChatService {
     }
   }
 
-  async broadcast(connectionId: string, content: string, endpoint: string): Promise<void> {
-    const user = await this.connections.getUser(connectionId);
-    if (!user) {
+  async broadcast(
+    connectionId: string,
+    content: string,
+    endpoint: string,
+  ): Promise<void> {
+    const meta = await this.connections.lookup(connectionId);
+    if (!meta) {
       this.logger.warn('sendmessage from unknown connection', { connectionId });
       return;
     }
 
+    const profile = await this.users.get(meta.userId);
+    if (!profile) return;
+
     const message: ChatMessage = {
       kind: 'user',
-      user,
+      user: UserService.toPublic(profile),
       content,
       timestamp: new Date().toISOString(),
     };
 
-    const connectionIds = await this.connections.listAll();
-    await this.broadcaster.send(connectionIds, { type: 'message', data: message }, endpoint);
+    const ids = await this.connections.listConnectionIds(meta.roomId);
+    await this.broadcaster.send(ids, { type: 'message', data: message }, endpoint);
   }
 
-  async broadcastSystemToOthers(
-    excludeConnectionId: string,
+  async broadcastSystem(
+    connectionIds: string[],
     segments: MessageSegment[],
     endpoint: string,
   ): Promise<void> {
@@ -50,10 +59,10 @@ export class ChatService {
       segments,
       timestamp: new Date().toISOString(),
     };
-
-    const all = await this.connections.listAll();
-    const others = all.filter((id) => id !== excludeConnectionId);
-    await this.broadcaster.send(others, { type: 'message', data: message }, endpoint);
+    await this.broadcaster.send(
+      connectionIds,
+      { type: 'message', data: message },
+      endpoint,
+    );
   }
-
 }
