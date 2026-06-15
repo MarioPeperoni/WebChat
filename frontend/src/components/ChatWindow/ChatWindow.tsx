@@ -151,7 +151,9 @@ const ChatWindow = () => {
 
   return (
     <section className="chat-container">
-      <OnlineCount count={userCount} />
+      <div className="chat-titlebar">
+        <span className="chat-titlebar-text">WebChat</span>
+      </div>
       <ul className="message-list">
         <li>
           {!started ? (
@@ -217,6 +219,10 @@ const ChatWindow = () => {
           onKeyDown={handleSendMessage}
         />
       </form>
+      <OnlineCount
+        count={userCount}
+        status={!started ? 'idle' : ready ? 'active' : 'establishing'}
+      />
     </section>
   );
 };

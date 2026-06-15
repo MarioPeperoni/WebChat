@@ -1,15 +1,23 @@
 header {
   text-align: center;
+  color: #ffffff;
+  padding: 14px 8px 10px;
+  flex-shrink: 0;
 }
 
 header h1 {
-  margin-bottom: 0.2em;
+  margin: 0 0 4px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 2px 2px 0 #000000;
 }
 
 header h2 {
-  margin-top: 0;
+  margin: 0;
+  font-size: 13px;
   font-weight: normal;
-
-  font-size: 1.1em;
   font-style: italic;
+  color: #c0c0c0;
+  letter-spacing: 0.04em;
 }
