@@ -7,7 +7,12 @@ import type {
   PresenceRepository,
   ConnectionsRepository,
 } from '@/repositories';
-import type { UserService, ChatService, WebSocketBroadcaster } from '@/services';
+import type {
+  UserService,
+  ChatService,
+  WebSocketBroadcaster,
+  GeoService,
+} from '@/services';
 import { UserService as UserServiceClass } from '@/services/UserService';
 import type { ConnectPresence } from '@/models';
 import { SystemMessageFactory } from '@/factories';
@@ -24,6 +29,7 @@ export class PresenceService {
     private readonly userService: UserService,
     private readonly chatService: ChatService,
     private readonly broadcaster: WebSocketBroadcaster,
+    private readonly geoService: GeoService,
     private readonly logger: Logger,
   ) {}
 
@@ -132,7 +138,8 @@ export class PresenceService {
     const existing = await this.users.get(userId);
     if (existing) return { profile: existing, isNew: false };
 
-    const profile = this.userService.generateInitialProfile(userId, presence, now);
+    const enriched = await this.enrichWithCountry(presence);
+    const profile = this.userService.generateInitialProfile(userId, enriched, now);
     try {
       await this.users.create(profile);
       return { profile, isNew: true };
@@ -143,6 +150,14 @@ export class PresenceService {
       }
       throw err;
     }
+  }
+
+  private async enrichWithCountry(
+    presence: ConnectPresence,
+  ): Promise<ConnectPresence> {
+    if (presence.country || !presence.ip) return presence;
+    const country = await this.geoService.lookupCountry(presence.ip);
+    return { ...presence, country };
   }
 
   private shouldAnnounceJoin(

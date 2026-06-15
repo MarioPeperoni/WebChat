@@ -85,12 +85,11 @@ export class UsersRepository {
         TableName: this.tableName,
         Key: { pk: `USER#${userId}`, sk: 'PROFILE' },
         UpdateExpression:
-          'SET metadata.lastSeenAt = :now, metadata.lastIp = :ip, metadata.lastUserAgent = :ua, metadata.country = :country',
+          'SET metadata.lastSeenAt = :now, metadata.lastIp = :ip, metadata.lastUserAgent = :ua',
         ExpressionAttributeValues: {
           ':now': now,
           ':ip': presence.ip,
           ':ua': presence.userAgent,
-          ':country': presence.country,
         },
       }),
     );

@@ -8,6 +8,7 @@ import {
   PresenceService,
   ChatService,
   WebSocketBroadcaster,
+  GeoService,
 } from '@/services';
 import { logger, type Logger } from '@/utils/logging';
 
@@ -21,6 +22,7 @@ class Container {
   private _presenceService?: PresenceService;
   private _chatService?: ChatService;
   private _webSocketBroadcaster?: WebSocketBroadcaster;
+  private _geoService?: GeoService;
 
   constructor() {
     const name = process.env.CHAT_TABLE;
@@ -89,10 +91,16 @@ class Container {
         this.userService,
         this.chatService,
         this.webSocketBroadcaster,
+        this.geoService,
         this.logger,
       );
     }
     return this._presenceService;
+  }
+
+  get geoService(): GeoService {
+    if (!this._geoService) this._geoService = new GeoService(this.logger);
+    return this._geoService;
   }
 
 }
