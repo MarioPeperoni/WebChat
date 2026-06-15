@@ -20,6 +20,17 @@ function ensureUserId(): string {
   return fresh;
 }
 
+function resolveNetLinkStatus(
+  started: boolean,
+  ready: boolean,
+  isSyncing: boolean,
+) {
+  if (!started) return 'idle' as const;
+  if (!ready) return 'establishing' as const;
+  if (isSyncing) return 'syncing' as const;
+  return 'active' as const;
+}
+
 function playMessageSound(message: ChatMessage, ownUserId: string): void {
   if (message.kind === 'user') {
     if (message.user.userId !== ownUserId) soundPlayer.play('messageReceived');
@@ -41,6 +52,7 @@ const ChatWindow = () => {
   const [userCount, setUserCount] = useState(0);
   const [ready, setReady] = useState(false);
   const [started, setStarted] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   const [isSending, startSending] = useTransition();
 
@@ -81,12 +93,19 @@ const ChatWindow = () => {
           case 'message':
             setMessages((prev) => [...(prev ?? []), data.data]);
             playMessageSound(data.data, userId);
+            if (
+              data.data.kind === 'user' &&
+              data.data.user.userId === userId
+            ) {
+              setIsSyncing(false);
+            }
             break;
         }
       };
 
       socket.onclose = () => {
         setReady(false);
+        setIsSyncing(false);
         if (wasOnlineRef.current) {
           wasOnlineRef.current = false;
           soundPlayer.play('disconnect');
@@ -124,8 +143,11 @@ const ChatWindow = () => {
   }, [started]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    inputRef.current?.focus();
+    const list = messagesEndRef.current?.parentElement;
+    if (list) list.scrollTop = list.scrollHeight;
+    if (!matchMedia('(pointer: coarse)').matches) {
+      inputRef.current?.focus();
+    }
   }, [messages]);
 
   const handleSendMessage = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -144,6 +166,7 @@ const ChatWindow = () => {
         }),
       );
       soundPlayer.play('messageSent');
+      setIsSyncing(true);
 
       event.currentTarget.value = '';
     });
@@ -221,7 +244,7 @@ const ChatWindow = () => {
       </form>
       <OnlineCount
         count={userCount}
-        status={!started ? 'idle' : ready ? 'active' : 'establishing'}
+        status={resolveNetLinkStatus(started, ready, isSyncing)}
       />
     </section>
   );
