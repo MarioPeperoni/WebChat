@@ -1,0 +1,45 @@
+.window {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  position: relative;
+  padding: 3px;
+  min-height: 0;
+  background: var(--win9-face);
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--win9-highlight) var(--win9-shadow-dark) var(--win9-shadow-dark) var(--win9-highlight);
+  box-shadow:
+    inset 1px 1px 0 var(--win9-highlight-soft),
+    inset -1px -1px 0 var(--win9-shadow),
+    3px 3px 0 var(--window-drop-shadow);
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 3px 6px;
+  background: linear-gradient(
+    90deg,
+    var(--win9-titlebar-from) 0%,
+    var(--win9-titlebar-to) 100%
+  );
+  color: var(--win9-text-on-dark);
+  font-weight: 700;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  text-shadow: 1px 1px 0 var(--titlebar-text-shadow);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  gap: 3px;
+}
+
+.statusbar {
+  flex-shrink: 0;
+}

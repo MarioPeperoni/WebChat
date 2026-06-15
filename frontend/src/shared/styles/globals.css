@@ -1,0 +1,6 @@
+body {
+  background: var(--win9-desktop);
+  color: var(--win9-text);
+  font-family: 'Tahoma', 'MS Sans Serif', Verdana, sans-serif;
+  font-size: 14px;
+}

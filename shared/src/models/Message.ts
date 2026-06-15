@@ -6,6 +6,8 @@ export type MessageSegment = {
   bold?: boolean;
 };
 
+export type SystemMessageEvent = 'user_joined' | 'user_left';
+
 export type ChatUserMessage = {
   kind: 'user';
   user: UserPublic;
@@ -15,6 +17,7 @@ export type ChatUserMessage = {
 
 export type ChatSystemMessage = {
   kind: 'system';
+  event: SystemMessageEvent;
   segments: MessageSegment[];
   timestamp: string;
 };

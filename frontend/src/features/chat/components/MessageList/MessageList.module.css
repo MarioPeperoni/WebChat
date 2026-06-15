@@ -1,0 +1,33 @@
+.list {
+  flex: 1;
+  margin: 0;
+  padding: 6px 10px;
+  overflow-y: auto;
+  min-height: 0;
+  list-style-type: none;
+  background: var(--win9-window-fill);
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--win9-shadow) var(--win9-highlight) var(--win9-highlight) var(--win9-shadow);
+  box-shadow:
+    inset 1px 1px 0 var(--win9-shadow-dark),
+    inset -1px -1px 0 var(--win9-highlight-soft);
+  font-size: 14px;
+  color: var(--win9-text);
+}
+
+.list li {
+  margin-bottom: 2px;
+  line-height: 1.45;
+  word-wrap: break-word;
+}
+
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, var(--brand-red) 0%, var(--brand-blue) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 0 var(--brand-shadow);
+}

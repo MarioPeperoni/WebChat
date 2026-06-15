@@ -1,1 +1,1 @@
-export { SystemMessageFactory } from './SystemMessageFactory';
+export * from './SystemMessageFactory';

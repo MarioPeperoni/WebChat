@@ -1,0 +1,38 @@
+.icon {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.iconIdle {
+  color: var(--win9-text-disabled);
+}
+
+.iconActive {
+  color: var(--status-online);
+}
+
+.dots::after {
+  display: inline-block;
+  width: 1em;
+  text-align: left;
+  content: '';
+  animation: dots 1.2s steps(4, end) infinite;
+}
+
+@keyframes dots {
+  0% {
+    content: '';
+  }
+  25% {
+    content: '.';
+  }
+  50% {
+    content: '..';
+  }
+  75% {
+    content: '...';
+  }
+}

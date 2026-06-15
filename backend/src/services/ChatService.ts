@@ -1,5 +1,6 @@
-import type { ChatMessage, MessageSegment } from '@webchat/shared';
+import type { ChatMessage } from '@webchat/shared';
 
+import type { SystemMessagePayload } from '@/factories';
 import type { ConnectionsRepository, UsersRepository } from '@/repositories';
 import type { WebSocketBroadcaster } from '@/services';
 import { UserService } from '@/services/UserService';
@@ -51,12 +52,12 @@ export class ChatService {
 
   async broadcastSystem(
     connectionIds: string[],
-    segments: MessageSegment[],
+    payload: SystemMessagePayload,
     endpoint: string,
   ): Promise<void> {
     const message: ChatMessage = {
       kind: 'system',
-      segments,
+      ...payload,
       timestamp: new Date().toISOString(),
     };
     await this.broadcaster.send(

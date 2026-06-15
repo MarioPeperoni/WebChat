@@ -1,0 +1,28 @@
+:root {
+  --win9-desktop: #008080;
+  --win9-face: #c0c0c0;
+  --win9-highlight: #ffffff;
+  --win9-highlight-soft: #dfdfdf;
+  --win9-shadow: #808080;
+  --win9-shadow-dark: #404040;
+
+  --win9-window-fill: #ffffff;
+  --win9-input-focus: #ffffe1;
+
+  --win9-titlebar-from: #000080;
+  --win9-titlebar-to: #1084d0;
+
+  --win9-text: #000000;
+  --win9-text-on-dark: #ffffff;
+  --win9-text-muted: #808080;
+  --win9-text-disabled: #606060;
+  --win9-text-soft: #c0c0c0;
+
+  --status-online: #008000;
+  --window-drop-shadow: rgba(0, 0, 0, 0.35);
+  --titlebar-text-shadow: rgba(0, 0, 0, 0.4);
+  --brand-shadow: rgba(0, 0, 0, 0.06);
+
+  --brand-red: #c63126;
+  --brand-blue: #5f6dda;
+}
