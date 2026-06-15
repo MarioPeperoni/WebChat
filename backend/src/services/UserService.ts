@@ -10,9 +10,9 @@ import type { User, UserPublic } from '@webchat/shared';
 import type { ConnectPresence } from '@/models';
 
 const COLORS = [
-  '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
-  '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
-  '#008080', '#e6beff', '#9a6324', '#800000', '#808000',
+  '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0d9488',
+  '#0891b2', '#2563eb', '#4f46e5', '#7c3aed', '#9333ea',
+  '#c026d3', '#db2777', '#e11d48', '#65a30d', '#0284c7',
 ];
 
 export class UserService {

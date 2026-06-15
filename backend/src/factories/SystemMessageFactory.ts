@@ -7,4 +7,11 @@ export class SystemMessageFactory {
       { text: ' joined the chatroom.' },
     ];
   }
+
+  static left(user: UserPublic): MessageSegment[] {
+    return [
+      { text: user.name, color: user.color },
+      { text: ' left the chatroom.' },
+    ];
+  }
 }

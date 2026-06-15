@@ -20,6 +20,16 @@
   font-style: italic;
 }
 
+.brand {
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: linear-gradient(90deg, #c63126 0%, #5f6dda 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
 .message-input {
   padding: 6px 1em 6px 1em;
   border: none;

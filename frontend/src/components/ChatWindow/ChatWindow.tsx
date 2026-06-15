@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useTransition } from 'react';
 
 import OnlineCount from '../OnlineCount/OnlineCount';
+import { soundPlayer } from '../../sound';
 
 import './ChatWindow.css';
 
@@ -19,19 +20,32 @@ function ensureUserId(): string {
   return fresh;
 }
 
+function playMessageSound(message: ChatMessage, ownUserId: string): void {
+  if (message.kind === 'user') {
+    if (message.user.userId !== ownUserId) soundPlayer.play('messageReceived');
+    return;
+  }
+  const text = message.segments.map((s) => s.text).join('');
+  if (text.includes('joined the chatroom')) soundPlayer.play('userJoined');
+  else if (text.includes('left the chatroom')) soundPlayer.play('userLeft');
+}
+
 const ChatWindow = () => {
   const socketRef = useRef<WebSocket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const wasOnlineRef = useRef(false);
 
   const [user, setUser] = useState<UserPublic | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>();
   const [userCount, setUserCount] = useState(0);
   const [ready, setReady] = useState(false);
+  const [started, setStarted] = useState(false);
 
   const [isSending, startSending] = useTransition();
 
   useEffect(() => {
+    if (!started) return;
     const userId = ensureUserId();
     let cancelled = false;
     let attempt = 0;
@@ -40,9 +54,7 @@ const ChatWindow = () => {
     const connect = () => {
       if (cancelled) return;
 
-      const socket = new WebSocket(
-        `${import.meta.env.VITE_WS_URL}?userId=${userId}`,
-      );
+      const socket = new WebSocket(`${import.meta.env.VITE_WS_URL}?userId=${userId}`);
       socketRef.current = socket;
 
       socket.onopen = () => {
@@ -57,6 +69,8 @@ const ChatWindow = () => {
             setUser(data.user);
             setUserCount(data.count);
             setReady(true);
+            wasOnlineRef.current = true;
+            soundPlayer.play('connect');
             break;
           case 'users_count':
             setUserCount(data.count);
@@ -66,17 +80,19 @@ const ChatWindow = () => {
             break;
           case 'message':
             setMessages((prev) => [...(prev ?? []), data.data]);
+            playMessageSound(data.data, userId);
             break;
         }
       };
 
       socket.onclose = () => {
         setReady(false);
+        if (wasOnlineRef.current) {
+          wasOnlineRef.current = false;
+          soundPlayer.play('disconnect');
+        }
         if (cancelled) return;
-        const delay = Math.min(
-          RECONNECT_MAX_MS,
-          RECONNECT_BASE_MS * 2 ** attempt,
-        );
+        const delay = Math.min(RECONNECT_MAX_MS, RECONNECT_BASE_MS * 2 ** attempt);
         attempt += 1;
         reconnectTimer = setTimeout(connect, delay);
       };
@@ -94,7 +110,18 @@ const ChatWindow = () => {
       socketRef.current?.close();
       socketRef.current = null;
     };
-  }, []);
+  }, [started]);
+
+  useEffect(() => {
+    if (started) return;
+    const start = () => setStarted(true);
+    document.addEventListener('pointerdown', start, { once: true });
+    document.addEventListener('keydown', start, { once: true });
+    return () => {
+      document.removeEventListener('pointerdown', start);
+      document.removeEventListener('keydown', start);
+    };
+  }, [started]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -116,6 +143,7 @@ const ChatWindow = () => {
           content,
         }),
       );
+      soundPlayer.play('messageSent');
 
       event.currentTarget.value = '';
     });
@@ -126,13 +154,18 @@ const ChatWindow = () => {
       <OnlineCount count={userCount} />
       <ul className="message-list">
         <li>
-          {ready && user ? (
+          {!started ? (
+            <>
+              Welcome to <span className="brand">WebChat</span>. Click anywhere to enter the
+              chatroom...
+            </>
+          ) : ready && user ? (
             <>
               Connected to the chatroom as{' '}
               <strong style={{ color: user.color }}>{user.name}</strong>.
             </>
           ) : (
-            'Connecting to chatroom...'
+            'Connecting you to the chatroom...'
           )}
         </li>
         {messages &&

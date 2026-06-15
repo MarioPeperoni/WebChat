@@ -55,15 +55,25 @@ export class PresenceService {
     }
   }
 
-  async unregister(connectionId: string): Promise<void> {
+  async unregister(connectionId: string, endpoint: string): Promise<void> {
     const meta = await this.connections.lookup(connectionId);
     if (!meta) return;
 
     await this.connections.remove(connectionId, meta.roomId);
     const sessions = await this.users.decrementSessions(meta.userId);
-    if (sessions <= 0) {
-      await this.presence.removeUserPresent(meta.roomId, meta.userId);
-    }
+    if (sessions > 0) return;
+
+    await this.presence.removeUserPresent(meta.roomId, meta.userId);
+
+    const profile = await this.users.get(meta.userId);
+    if (!profile) return;
+
+    const remaining = await this.connections.listConnectionIds(meta.roomId);
+    await this.chatService.broadcastSystem(
+      remaining,
+      SystemMessageFactory.left(UserServiceClass.toPublic(profile)),
+      endpoint,
+    );
   }
 
   async updateColor(
