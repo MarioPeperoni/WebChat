@@ -30,6 +30,7 @@ export class PresenceRepository {
           userId: user.userId,
           name: user.name,
           color: user.color,
+          description: user.description,
         },
       }),
     );

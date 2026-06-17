@@ -9,6 +9,7 @@ const playMessageSound = (message: ChatMessage, ownUserId: string): void => {
     else if (message.event === 'user_left') soundPlayer.play('userLeft');
     return;
   }
+  if (message.kind === 'command') return;
   if (message.user.userId !== ownUserId) soundPlayer.play('messageReceived');
 };
 

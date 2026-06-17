@@ -2,6 +2,7 @@ export type UserPublic = {
   userId: string;
   name: string;
   color: string;
+  description: string | null;
 };
 
 export type UserMetadata = {
@@ -13,5 +14,6 @@ export type UserMetadata = {
 };
 
 export type User = UserPublic & {
+  messagesSent: number;
   metadata: UserMetadata;
 };

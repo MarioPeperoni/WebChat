@@ -48,6 +48,7 @@ export class ChatService {
 
     const ids = await this.connections.listConnectionIds(meta.roomId);
     await this.broadcaster.send(ids, { type: 'message', data: message }, endpoint);
+    await this.users.incrementMessages(meta.userId);
   }
 
   async broadcastSystem(

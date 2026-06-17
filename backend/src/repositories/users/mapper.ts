@@ -13,6 +13,8 @@ export function toUser(item: Record<string, unknown> | undefined): User | null {
     userId: item.userId,
     name: item.name,
     color: item.color,
+    description: typeof item.description === 'string' ? item.description : null,
+    messagesSent: typeof item.messagesSent === 'number' ? item.messagesSent : 0,
     metadata: item.metadata as UserMetadata,
   };
 }

@@ -41,8 +41,10 @@ export class UsersRepository {
           userId: profile.userId,
           name: profile.name,
           color: profile.color,
+          description: profile.description,
           metadata: profile.metadata,
           activeSessions: 0,
+          messagesSent: 0,
         },
         ConditionExpression: 'attribute_not_exists(pk)',
       }),
@@ -102,6 +104,36 @@ export class UsersRepository {
         Key: { pk: `USER#${userId}`, sk: 'PROFILE' },
         UpdateExpression: 'SET color = :color, metadata.lastSeenAt = :now',
         ExpressionAttributeValues: { ':color': color, ':now': now },
+        ConditionExpression: 'attribute_exists(pk)',
+        ReturnValues: 'ALL_NEW',
+      }),
+    );
+    return toUser(result.Attributes);
+  }
+
+  async incrementMessages(userId: string): Promise<void> {
+    await this.client.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: { pk: `USER#${userId}`, sk: 'PROFILE' },
+        UpdateExpression: 'ADD messagesSent :one',
+        ExpressionAttributeValues: { ':one': 1 },
+      }),
+    );
+  }
+
+  async setDescription(
+    userId: string,
+    description: string | null,
+    now: string,
+  ): Promise<User | null> {
+    const result = await this.client.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: { pk: `USER#${userId}`, sk: 'PROFILE' },
+        UpdateExpression: 'SET #desc = :d, metadata.lastSeenAt = :now',
+        ExpressionAttributeNames: { '#desc': 'description' },
+        ExpressionAttributeValues: { ':d': description, ':now': now },
         ConditionExpression: 'attribute_exists(pk)',
         ReturnValues: 'ALL_NEW',
       }),

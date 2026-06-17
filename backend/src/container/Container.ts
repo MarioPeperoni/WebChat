@@ -1,15 +1,22 @@
 import {
-  UsersRepository,
-  PresenceRepository,
   ConnectionsRepository,
+  PresenceRepository,
+  RoomsRepository,
+  UsersRepository,
 } from '@/repositories';
 import {
-  UserService,
-  PresenceService,
   ChatService,
-  WebSocketBroadcaster,
   GeoService,
+  PresenceService,
+  RoomsService,
+  UserService,
+  WebSocketBroadcaster,
 } from '@/services';
+import {
+  buildRegistry,
+  CommandRegistry,
+  CommandService,
+} from '@/services/commands';
 import { logger, type Logger } from '@/utils/logging';
 
 class Container {
@@ -18,11 +25,15 @@ class Container {
   private _usersRepository?: UsersRepository;
   private _presenceRepository?: PresenceRepository;
   private _connectionsRepository?: ConnectionsRepository;
+  private _roomsRepository?: RoomsRepository;
   private _userService?: UserService;
   private _presenceService?: PresenceService;
   private _chatService?: ChatService;
+  private _roomsService?: RoomsService;
   private _webSocketBroadcaster?: WebSocketBroadcaster;
   private _geoService?: GeoService;
+  private _commandRegistry?: CommandRegistry;
+  private _commandService?: CommandService;
 
   constructor() {
     const name = process.env.CHAT_TABLE;
@@ -55,6 +66,13 @@ class Container {
     return this._connectionsRepository;
   }
 
+  get roomsRepository(): RoomsRepository {
+    if (!this._roomsRepository) {
+      this._roomsRepository = new RoomsRepository(this.tableName);
+    }
+    return this._roomsRepository;
+  }
+
   get userService(): UserService {
     if (!this._userService) this._userService = new UserService();
     return this._userService;
@@ -82,6 +100,13 @@ class Container {
     return this._chatService;
   }
 
+  get roomsService(): RoomsService {
+    if (!this._roomsService) {
+      this._roomsService = new RoomsService(this.roomsRepository);
+    }
+    return this._roomsService;
+  }
+
   get presenceService(): PresenceService {
     if (!this._presenceService) {
       this._presenceService = new PresenceService(
@@ -92,6 +117,7 @@ class Container {
         this.chatService,
         this.webSocketBroadcaster,
         this.geoService,
+        this.roomsService,
         this.logger,
       );
     }
@@ -103,6 +129,30 @@ class Container {
     return this._geoService;
   }
 
+  get commandRegistry(): CommandRegistry {
+    if (!this._commandRegistry) {
+      this._commandRegistry = buildRegistry({
+        users: this.usersRepository,
+        presence: this.presenceRepository,
+        connections: this.connectionsRepository,
+        rooms: this.roomsService,
+        presenceService: this.presenceService,
+        broadcaster: this.webSocketBroadcaster,
+      });
+    }
+    return this._commandRegistry;
+  }
+
+  get commandService(): CommandService {
+    if (!this._commandService) {
+      this._commandService = new CommandService(
+        this.commandRegistry,
+        this.webSocketBroadcaster,
+        this.logger,
+      );
+    }
+    return this._commandService;
+  }
 }
 
 export const container = new Container();

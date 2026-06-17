@@ -1,8 +1,10 @@
 import { useEffect } from 'react';
 
 import { registerChatHandlers, useChatStore } from '@/features/chat';
+import { registerCommandHandlers } from '@/features/commands';
 import { identityService, registerIdentityHandlers } from '@/features/identity';
 import { registerPresenceHandlers } from '@/features/presence';
+import { registerRoomHandlers } from '@/features/room';
 import { env, wsClient } from '@/shared';
 
 export const useAppBoot = () => {
@@ -25,12 +27,16 @@ export const useAppBoot = () => {
     const unsubChat = registerChatHandlers(userId);
     const unsubIdentity = registerIdentityHandlers(userId);
     const unsubPresence = registerPresenceHandlers();
+    const unsubRoom = registerRoomHandlers();
+    const unsubCommands = registerCommandHandlers();
     const disconnect = wsClient.connect(env.VITE_WS_URL, userId);
     return () => {
       disconnect();
       unsubChat();
       unsubIdentity();
       unsubPresence();
+      unsubRoom();
+      unsubCommands();
     };
   }, [isIdle]);
 };

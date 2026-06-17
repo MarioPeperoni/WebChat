@@ -37,6 +37,8 @@ export class UserService {
       userId,
       name,
       color,
+      description: null,
+      messagesSent: 0,
       metadata: {
         firstSeenAt: now,
         lastSeenAt: now,
@@ -48,6 +50,11 @@ export class UserService {
   }
 
   static toPublic(user: User): UserPublic {
-    return { userId: user.userId, name: user.name, color: user.color };
+    return {
+      userId: user.userId,
+      name: user.name,
+      color: user.color,
+      description: user.description,
+    };
   }
 }

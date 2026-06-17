@@ -8,6 +8,11 @@
     "backend",
     "frontend"
   ],
+  "scripts": {
+    "deploy": "bun run deploy:backend && bun run deploy:frontend",
+    "deploy:backend": "cd infrastructure/cdk && bunx cdk deploy WebChatStack --require-approval never --outputs-file cdk-outputs.json",
+    "deploy:frontend": "cd frontend && bun run build && aws s3 sync dist s3://$(jq -r '.WebChatStack.FrontendBucketName' ../infrastructure/cdk/cdk-outputs.json) --delete && aws cloudfront create-invalidation --distribution-id $(jq -r '.WebChatStack.FrontendDistributionId' ../infrastructure/cdk/cdk-outputs.json) --paths '/*'"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/MarioPeperoni/WebChat.git"

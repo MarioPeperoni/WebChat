@@ -2,3 +2,41 @@
   font-style: italic;
   color: var(--win9-text-disabled);
 }
+
+.command {
+  display: block;
+  margin: 6px 0;
+  padding: 6px 8px;
+  background: var(--win9-face);
+  border-width: 2px;
+  border-style: solid;
+  border-color: var(--win9-shadow) var(--win9-highlight) var(--win9-highlight) var(--win9-shadow);
+  font-family: 'Courier New', 'Lucida Console', monospace;
+  font-size: 13px;
+  color: var(--win9-text);
+}
+
+.commandPrompt {
+  font-weight: bold;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed var(--win9-shadow);
+  margin-bottom: 4px;
+}
+
+.commandPromptArrow {
+  color: var(--win9-text-muted);
+  margin-right: 4px;
+}
+
+.commandResult {
+  white-space: pre-wrap;
+}
+
+.commandLine {
+  line-height: 1.4;
+}
+
+.commandPending {
+  color: var(--win9-text-muted);
+  font-style: italic;
+}

@@ -1,3 +1,4 @@
+import type { CommandResult } from './Command';
 import type { UserPublic } from './User';
 
 export type MessageSegment = {
@@ -22,4 +23,12 @@ export type ChatSystemMessage = {
   timestamp: string;
 };
 
-export type ChatMessage = ChatUserMessage | ChatSystemMessage;
+export type ChatCommandMessage = {
+  kind: 'command';
+  commandId: string;
+  prompt: string;
+  result: CommandResult | null;
+  timestamp: string;
+};
+
+export type ChatMessage = ChatUserMessage | ChatSystemMessage | ChatCommandMessage;

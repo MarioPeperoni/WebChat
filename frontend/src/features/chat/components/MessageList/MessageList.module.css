@@ -31,3 +31,9 @@
   color: transparent;
   text-shadow: 0 1px 0 var(--brand-shadow);
 }
+
+.roomDescription {
+  font-style: italic;
+  opacity: 0.8;
+  margin-bottom: 6px;
+}

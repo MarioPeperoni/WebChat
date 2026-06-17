@@ -1,0 +1,11 @@
+export { CommandFormatter } from './CommandFormatter';
+export { CommandRegistry } from './CommandRegistry';
+export { CommandService } from './CommandService';
+export { buildProfileCommands } from './profileCommands';
+export type { ProfileCommandDeps } from './profileCommands';
+export { buildRoomCommands } from './roomCommands';
+export type { RoomCommandDeps } from './roomCommands';
+export { buildHelpCommands } from './helpCommands';
+export type { HelpCommandDeps } from './helpCommands';
+export { buildRegistry } from './buildRegistry';
+export type { RegistryDeps } from './buildRegistry';

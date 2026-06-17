@@ -1,0 +1,1 @@
+export { RoomsRepository } from './RoomsRepository';

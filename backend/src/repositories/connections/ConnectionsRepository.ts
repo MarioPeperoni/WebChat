@@ -4,7 +4,9 @@ import {
   DeleteCommand,
   GetCommand,
   PutCommand,
+  UpdateCommand,
   paginateQuery,
+  paginateScan,
 } from '@aws-sdk/lib-dynamodb';
 
 import type { ConnectionMeta } from '@/models';
@@ -72,6 +74,38 @@ export class ConnectionsRepository {
     );
   }
 
+  async moveToRoom(
+    meta: ConnectionMeta,
+    newRoomId: string,
+  ): Promise<void> {
+    await this.client.send(
+      new DeleteCommand({
+        TableName: this.tableName,
+        Key: { pk: `ROOM#${meta.roomId}`, sk: `CONN#${meta.connectionId}` },
+      }),
+    );
+    await this.client.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: { pk: `CONN#${meta.connectionId}`, sk: 'META' },
+        UpdateExpression: 'SET roomId = :r',
+        ExpressionAttributeValues: { ':r': newRoomId },
+      }),
+    );
+    await this.client.send(
+      new PutCommand({
+        TableName: this.tableName,
+        Item: {
+          pk: `ROOM#${newRoomId}`,
+          sk: `CONN#${meta.connectionId}`,
+          connectionId: meta.connectionId,
+          userId: meta.userId,
+          roomId: newRoomId,
+        },
+      }),
+    );
+  }
+
   async listConnectionIds(roomId: string): Promise<string[]> {
     const pages = paginateQuery(
       { client: this.client },
@@ -86,6 +120,25 @@ export class ConnectionsRepository {
       },
     );
 
+    const ids: string[] = [];
+    for await (const page of pages) {
+      for (const item of page.Items ?? []) {
+        if (typeof item.connectionId === 'string') ids.push(item.connectionId);
+      }
+    }
+    return ids;
+  }
+
+  async listConnectionIdsForUser(userId: string): Promise<string[]> {
+    const pages = paginateScan(
+      { client: this.client },
+      {
+        TableName: this.tableName,
+        FilterExpression: 'userId = :u AND begins_with(pk, :p)',
+        ExpressionAttributeValues: { ':u': userId, ':p': 'CONN#' },
+        ProjectionExpression: 'connectionId',
+      },
+    );
     const ids: string[] = [];
     for await (const page of pages) {
       for (const item of page.Items ?? []) {

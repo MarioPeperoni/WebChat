@@ -8,5 +8,10 @@ export function toUserPublic(item: Record<string, unknown>): UserPublic | null {
   ) {
     return null;
   }
-  return { userId: item.userId, name: item.name, color: item.color };
+  return {
+    userId: item.userId,
+    name: item.name,
+    color: item.color,
+    description: typeof item.description === 'string' ? item.description : null,
+  };
 }

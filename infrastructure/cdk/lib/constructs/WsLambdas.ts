@@ -21,6 +21,7 @@ export class WsLambdas extends Construct {
   readonly disconnect: NodejsFunction;
   readonly hello: NodejsFunction;
   readonly sendMessage: NodejsFunction;
+  readonly command: NodejsFunction;
 
   constructor(scope: Construct, id: string, props: WsLambdasProps) {
     super(scope, id);
@@ -70,5 +71,13 @@ export class WsLambdas extends Construct {
       timeout: cdk.Duration.seconds(15),
     });
     props.chatTable.grantReadWriteData(this.sendMessage);
+
+    this.command = new NodejsFunction(this, 'CommandFn', {
+      ...defaults,
+      entry: path.join(HANDLERS_ROOT, 'commands', 'dispatch.ts'),
+      handler: 'handler',
+      timeout: cdk.Duration.seconds(15),
+    });
+    props.chatTable.grantReadWriteData(this.command);
   }
 }

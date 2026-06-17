@@ -16,6 +16,7 @@ export interface WebSocketApiProps {
   disconnectFn: NodejsFunction;
   helloFn: NodejsFunction;
   sendMessageFn: NodejsFunction;
+  commandFn: NodejsFunction;
   customDomain?: CustomDomainProps;
 }
 
@@ -45,6 +46,10 @@ export class WebSocketApi extends Construct {
       integration: new WebSocketLambdaIntegration('SendMessageIntegration', props.sendMessageFn),
     });
 
+    this.api.addRoute('command', {
+      integration: new WebSocketLambdaIntegration('CommandIntegration', props.commandFn),
+    });
+
     this.stage = new apigwv2.WebSocketStage(this, 'Stage', {
       webSocketApi: this.api,
       stageName: 'prod',
@@ -55,6 +60,7 @@ export class WebSocketApi extends Construct {
     this.api.grantManageConnections(props.disconnectFn);
     this.api.grantManageConnections(props.helloFn);
     this.api.grantManageConnections(props.sendMessageFn);
+    this.api.grantManageConnections(props.commandFn);
 
     if (props.customDomain) {
       const cert = acm.Certificate.fromCertificateArn(this, 'Cert', props.customDomain.certArn);

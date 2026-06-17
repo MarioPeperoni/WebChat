@@ -1,4 +1,8 @@
-import type { ChatMessage } from '@webchat/shared';
+import type {
+  ChatCommandMessage,
+  ChatMessage,
+  MessageSegment,
+} from '@webchat/shared';
 
 import s from '@/features/chat/components/MessageItem/MessageItem.module.css';
 
@@ -12,18 +16,14 @@ export const MessageItem = ({ message, ownUserId }: MessageItemProps) => {
     return (
       <li className={s.system}>
         {message.segments.map((seg, i) => (
-          <span
-            key={i}
-            style={{
-              color: seg.color,
-              fontWeight: seg.bold ? 'bold' : undefined,
-            }}
-          >
-            {seg.text}
-          </span>
+          <Segment key={i} segment={seg} />
         ))}
       </li>
     );
+  }
+
+  if (message.kind === 'command') {
+    return <CommandBlock message={message} />;
   }
 
   return (
@@ -41,3 +41,35 @@ export const MessageItem = ({ message, ownUserId }: MessageItemProps) => {
     </li>
   );
 };
+
+const CommandBlock = ({ message }: { message: ChatCommandMessage }) => (
+  <li className={s.command}>
+    <div className={s.commandPrompt}>
+      <span className={s.commandPromptArrow}>&gt;</span> {message.prompt}
+    </div>
+    <div className={s.commandResult}>
+      {message.result === null ? (
+        <span className={s.commandPending}>...</span>
+      ) : (
+        message.result.lines.map((line, i) => (
+          <div key={i} className={s.commandLine}>
+            {line.length === 0 ? ' ' : line.map((seg, j) => (
+              <Segment key={j} segment={seg} />
+            ))}
+          </div>
+        ))
+      )}
+    </div>
+  </li>
+);
+
+const Segment = ({ segment }: { segment: MessageSegment }) => (
+  <span
+    style={{
+      color: segment.color,
+      fontWeight: segment.bold ? 'bold' : undefined,
+    }}
+  >
+    {segment.text}
+  </span>
+);
