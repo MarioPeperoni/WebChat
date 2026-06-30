@@ -14,6 +14,8 @@ export type Room = {
 
 export const DEFAULT_ROOM_COLOR = '#000000';
 
-export type RoomSummary = Pick<Room, 'roomId' | 'name' | 'memberCount'>;
+export type RoomSummary = Pick<Room, 'roomId' | 'name' | 'memberCount'> & {
+  hasPassword: boolean;
+};
 
 export const GLOBAL_ROOM_ID = 'global';

@@ -35,5 +35,6 @@ export function toRoomSummary(
     roomId: item.roomId,
     name: item.name,
     memberCount: typeof item.memberCount === 'number' ? item.memberCount : 0,
+    hasPassword: item.hasPassword === true,
   };
 }

@@ -1,0 +1,9 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  background: var(--win9-window-fill);
+}

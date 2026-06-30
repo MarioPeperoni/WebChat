@@ -1,0 +1,74 @@
+.bar {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  height: 24px;
+  padding-left: 4px;
+  background: var(--win9-face);
+  border-bottom: 1px solid #000;
+  position: relative;
+}
+
+.tab {
+  --slant: 8px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: -10px;
+  padding: 0 16px;
+  height: 100%;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: normal;
+  color: var(--win9-text);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.tab::before,
+.tab::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(var(--slant) 0, calc(100% - var(--slant)) 0, 100% 100%, 0 100%);
+}
+
+.tab::before {
+  background: #000;
+}
+
+.tab::after {
+  inset: 1px 1px 0 1px;
+  background: var(--win9-face);
+}
+
+.tab:hover::after {
+  background: var(--win9-highlight-soft);
+}
+
+.tab:focus-visible {
+  outline: 1px dotted var(--win9-text);
+  outline-offset: -4px;
+}
+
+.tabActive {
+  z-index: 3;
+  font-weight: bold;
+}
+
+.tabActive::after {
+  inset: 1px 1px -1px 1px;
+  background: var(--win9-window-fill);
+}
+
+.label {
+  position: relative;
+  z-index: 1;
+}
+
+.spacer {
+  flex: 1;
+}

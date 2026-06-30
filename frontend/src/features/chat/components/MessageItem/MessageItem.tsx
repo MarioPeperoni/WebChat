@@ -4,6 +4,8 @@ import type {
   MessageSegment,
 } from '@webchat/shared';
 
+import { useBuddiesStore } from '@/features/buddies/store';
+
 import s from '@/features/chat/components/MessageItem/MessageItem.module.css';
 
 interface MessageItemProps {
@@ -12,6 +14,10 @@ interface MessageItemProps {
 }
 
 export const MessageItem = ({ message, ownUserId }: MessageItemProps) => {
+  const isBuddy = useBuddiesStore((b) =>
+    message.kind === 'user' ? b.isBuddy(message.user.userId) : false,
+  );
+
   if (message.kind === 'system') {
     return (
       <li className={s.system}>
@@ -33,6 +39,11 @@ export const MessageItem = ({ message, ownUserId }: MessageItemProps) => {
           style={{ color: message.user.color }}
           aria-label={`Message from ${message.user.name}`}
         >
+          {isBuddy && (
+            <span className={s.buddyMark} title="buddy">
+              ★
+            </span>
+          )}
           {message.user.name}
           {message.user.userId === ownUserId ? ' (You)' : ''}:
         </span>{' '}

@@ -1,0 +1,44 @@
+.x,
+.y {
+  flex-shrink: 0;
+  background: var(--win9-face);
+  border-style: solid;
+  border-color: var(--win9-highlight) var(--win9-shadow) var(--win9-shadow) var(--win9-highlight);
+  touch-action: none;
+  user-select: none;
+}
+
+.x {
+  width: 5px;
+  cursor: col-resize;
+  border-width: 0 1px;
+  background-image: linear-gradient(
+    to right,
+    transparent 1px,
+    var(--win9-shadow) 1px,
+    var(--win9-shadow) 2px,
+    var(--win9-highlight) 2px,
+    var(--win9-highlight) 3px,
+    transparent 3px
+  );
+}
+
+.y {
+  height: 5px;
+  cursor: row-resize;
+  border-width: 1px 0;
+  background-image: linear-gradient(
+    to bottom,
+    transparent 1px,
+    var(--win9-shadow) 1px,
+    var(--win9-shadow) 2px,
+    var(--win9-highlight) 2px,
+    var(--win9-highlight) 3px,
+    transparent 3px
+  );
+}
+
+.x:hover,
+.y:hover {
+  background-color: var(--win9-highlight-soft);
+}

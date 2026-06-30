@@ -1,11 +1,13 @@
 import { NetLinkIndicator } from '@/features/presence/components/NetLinkIndicator';
-import { usePresenceStore } from '@/features/presence/store';
 import { RoomIndicator } from '@/features/room/components';
+import { useRoomsListStore } from '@/features/room/store';
 
 import s from '@/features/presence/components/StatusBar/StatusBar.module.css';
 
 export const StatusBar = () => {
-  const count = usePresenceStore((s) => s.count);
+  const count = useRoomsListStore((s) =>
+    s.rooms.reduce((sum, room) => sum + room.memberCount, 0),
+  );
 
   return (
     <div className={s.bar}>

@@ -129,6 +129,25 @@ export class ConnectionsRepository {
     return ids;
   }
 
+  async listAllConnectionIds(): Promise<string[]> {
+    const pages = paginateScan(
+      { client: this.client },
+      {
+        TableName: this.tableName,
+        FilterExpression: 'begins_with(pk, :p) AND sk = :s',
+        ExpressionAttributeValues: { ':p': 'CONN#', ':s': 'META' },
+        ProjectionExpression: 'connectionId',
+      },
+    );
+    const ids: string[] = [];
+    for await (const page of pages) {
+      for (const item of page.Items ?? []) {
+        if (typeof item.connectionId === 'string') ids.push(item.connectionId);
+      }
+    }
+    return ids;
+  }
+
   async listConnectionIdsForUser(userId: string): Promise<string[]> {
     const pages = paginateScan(
       { client: this.client },

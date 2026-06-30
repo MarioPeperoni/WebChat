@@ -14,6 +14,12 @@ export const requireToken = (rest: string, label: string): ParseResult<string> =
   return { ok: true, args: first };
 };
 
+export const requireRest = (rest: string, label: string): ParseResult<string> => {
+  const trimmed = rest.trim();
+  if (trimmed.length === 0) return { ok: false, error: `missing argument: ${label}` };
+  return { ok: true, args: trimmed };
+};
+
 export const requireSlug = (rest: string, label: string): ParseResult<string> => {
   const token = requireToken(rest, label);
   if (!token.ok) return token;

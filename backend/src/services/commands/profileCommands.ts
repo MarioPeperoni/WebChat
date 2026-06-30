@@ -1,11 +1,11 @@
 import type { MessageSegment, User } from '@webchat/shared';
 
 import type { ConnectionsRepository, PresenceRepository, UsersRepository } from '@/repositories';
-import type { PresenceService } from '@/services';
+import type { BuddiesService, PresenceService } from '@/services';
 import { UserService } from '@/services/UserService';
 import { CommandFormatter } from '@/services/commands/CommandFormatter';
 import type { CommandContext, CommandDef } from '@/types';
-import { noArgs, requireHex, requireText, requireToken } from '@/utils';
+import { noArgs, requireHex, requireRest, requireText } from '@/utils';
 
 const DESCRIPTION_MAX = 140;
 
@@ -14,6 +14,7 @@ export interface ProfileCommandDeps {
   presence: PresenceRepository;
   connections: ConnectionsRepository;
   presenceService: PresenceService;
+  buddies: BuddiesService;
 }
 
 export const buildProfileCommands = (deps: ProfileCommandDeps): readonly CommandDef<any>[] => [
@@ -22,7 +23,7 @@ export const buildProfileCommands = (deps: ProfileCommandDeps): readonly Command
     description: 'show a user profile (defaults to you)',
     usage: '/profile view [user]',
     parseArgs: (rest) =>
-      rest.length === 0 ? { ok: true, args: null } : requireToken(rest, 'username'),
+      rest.length === 0 ? { ok: true, args: null } : requireRest(rest, 'username'),
     execute: async (ctx, target) => viewProfile(ctx, target, deps),
   } satisfies CommandDef<string | null>,
 
@@ -115,6 +116,12 @@ async function resolveUser(
       const full = await deps.users.get(byNick.userId);
       if (full) return full;
     }
+  }
+  const buddies = await deps.buddies.listBuddies(ctx.callerUserId);
+  const buddy = buddies.find((b) => b.name.toLowerCase() === target.toLowerCase());
+  if (buddy) {
+    const full = await deps.users.get(buddy.userId);
+    if (full) return full;
   }
   return deps.users.get(target);
 }

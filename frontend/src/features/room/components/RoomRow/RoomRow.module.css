@@ -1,0 +1,97 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  font-size: 13px;
+  line-height: 1.4;
+  cursor: default;
+}
+
+.row:hover {
+  background: var(--win9-titlebar-from);
+  color: var(--win9-text-on-dark);
+}
+
+.rowCurrent {
+  font-weight: 700;
+}
+
+.hash {
+  color: var(--win9-text-muted);
+  font-weight: 700;
+  width: 10px;
+  display: inline-flex;
+  justify-content: center;
+}
+
+.row:hover .hash {
+  color: var(--win9-text-on-dark);
+}
+
+.name {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lock {
+  display: inline-flex;
+  align-items: center;
+  width: 12px;
+}
+
+.count {
+  color: var(--win9-text-muted);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  padding: 0 2px;
+}
+
+.row:hover .count {
+  color: var(--win9-text-on-dark);
+}
+
+.actions {
+  display: none;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.row:hover .actions {
+  display: inline-flex;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 2px;
+  background: var(--win9-face);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--win9-highlight) var(--win9-shadow-dark) var(--win9-shadow-dark) var(--win9-highlight);
+  box-shadow: inset 1px 1px 0 var(--win9-highlight-soft), inset -1px -1px 0 var(--win9-shadow);
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 0;
+}
+
+.action:hover {
+  background: var(--win9-highlight-soft);
+}
+
+.action:active {
+  border-color: var(--win9-shadow-dark) var(--win9-highlight) var(--win9-highlight) var(--win9-shadow-dark);
+  box-shadow: inset 1px 1px 0 var(--win9-shadow), inset -1px -1px 0 var(--win9-highlight-soft);
+}
+
+.actionJoin {
+  color: #d65a00;
+}
+
+.actionInfo {
+  color: #0033cc;
+}

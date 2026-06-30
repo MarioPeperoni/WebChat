@@ -1,12 +1,14 @@
 import { useChatStore } from '@/features/chat/store';
-import { useRoomStore } from '@/features/room/store';
+import { useRoomStore, useRoomsListStore } from '@/features/room/store';
 import { wsClient, type Unsubscribe } from '@/shared';
 
 export const registerRoomHandlers = (): Unsubscribe => {
   const store = useRoomStore;
+  const listStore = useRoomsListStore;
 
   const unsubHello = wsClient.on('hello', (event) => {
     store.getState().setRoom(event.room);
+    listStore.getState().setRooms(event.rooms);
   });
 
   const unsubChanged = wsClient.on('room_changed', (event) => {
@@ -17,8 +19,13 @@ export const registerRoomHandlers = (): Unsubscribe => {
     }
   });
 
+  const unsubRoomsList = wsClient.on('rooms_list', (event) => {
+    listStore.getState().setRooms(event.rooms);
+  });
+
   return () => {
     unsubHello();
     unsubChanged();
+    unsubRoomsList();
   };
 };

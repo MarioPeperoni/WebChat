@@ -38,6 +38,7 @@ export class RoomsRepository {
 
   async create(room: Omit<Room, 'memberCount'>): Promise<Room> {
     const now = room.createdAt;
+    const ttl = Math.floor(Date.now() / 1000) + EMPTY_ROOM_TTL_SECONDS;
     const item: Record<string, unknown> = {
       pk: `ROOM_META#${room.roomId}`,
       sk: 'META',
@@ -50,7 +51,7 @@ export class RoomsRepository {
       color: room.color,
       createdAt: now,
       memberCount: 0,
-      expiresAt: Math.floor(Date.now() / 1000) + EMPTY_ROOM_TTL_SECONDS,
+      expiresAt: ttl,
     };
     await this.client.send(
       new PutCommand({
@@ -60,7 +61,7 @@ export class RoomsRepository {
       }),
     );
     if (room.visibility === 'public') {
-      await this.putPublicIndex(room.roomId, room.name);
+      await this.putPublicIndex(room.roomId, room.name, room.password !== null, ttl);
     }
     return { ...room, memberCount: 0 };
   }
@@ -118,7 +119,7 @@ export class RoomsRepository {
     );
     const room = toRoom(result.Attributes);
     if (room && room.visibility === 'public') {
-      await this.putPublicIndex(roomId, name);
+      await this.putPublicIndex(roomId, name, room.password !== null);
     }
     return room;
   }
@@ -155,7 +156,11 @@ export class RoomsRepository {
         ReturnValues: 'ALL_NEW',
       }),
     );
-    return toRoom(result.Attributes);
+    const room = toRoom(result.Attributes);
+    if (room && room.visibility === 'public') {
+      await this.syncPublicIndexPassword(roomId, password !== null);
+    }
+    return room;
   }
 
   async setVisibility(
@@ -175,7 +180,7 @@ export class RoomsRepository {
     const room = toRoom(result.Attributes);
     if (!room) return null;
     if (visibility === 'public') {
-      await this.putPublicIndex(roomId, room.name);
+      await this.putPublicIndex(roomId, room.name, room.password !== null);
     } else {
       await this.removePublicIndex(roomId);
     }
@@ -226,19 +231,42 @@ export class RoomsRepository {
     );
   }
 
-  private async putPublicIndex(roomId: string, name: string): Promise<void> {
+  private async putPublicIndex(
+    roomId: string,
+    name: string,
+    hasPassword: boolean,
+    expiresAt?: number,
+  ): Promise<void> {
+    const item: Record<string, unknown> = {
+      pk: ROOM_INDEX_PK,
+      sk: `ROOM#${roomId}`,
+      roomId,
+      name,
+      memberCount: 0,
+      hasPassword,
+    };
+    if (expiresAt !== undefined) item.expiresAt = expiresAt;
     await this.client.send(
       new PutCommand({
         TableName: this.tableName,
-        Item: {
-          pk: ROOM_INDEX_PK,
-          sk: `ROOM#${roomId}`,
-          roomId,
-          name,
-          memberCount: 0,
-        },
+        Item: item,
       }),
     );
+  }
+
+  private async syncPublicIndexPassword(
+    roomId: string,
+    hasPassword: boolean,
+  ): Promise<void> {
+    await this.client.send(
+      new UpdateCommand({
+        TableName: this.tableName,
+        Key: { pk: ROOM_INDEX_PK, sk: `ROOM#${roomId}` },
+        UpdateExpression: 'SET hasPassword = :h',
+        ExpressionAttributeValues: { ':h': hasPassword },
+        ConditionExpression: 'attribute_exists(pk)',
+      }),
+    ).catch(() => {});
   }
 
   private async removePublicIndex(roomId: string): Promise<void> {
@@ -254,15 +282,26 @@ export class RoomsRepository {
     roomId: string,
     memberCount: number,
   ): Promise<void> {
-    await this.client.send(
-      new UpdateCommand({
-        TableName: this.tableName,
-        Key: { pk: ROOM_INDEX_PK, sk: `ROOM#${roomId}` },
-        UpdateExpression: 'SET memberCount = :c',
-        ExpressionAttributeValues: { ':c': memberCount },
-        ConditionExpression: 'attribute_exists(pk)',
-      }),
-    ).catch(() => {
+    const occupied = memberCount > 0;
+    const command = occupied
+      ? new UpdateCommand({
+          TableName: this.tableName,
+          Key: { pk: ROOM_INDEX_PK, sk: `ROOM#${roomId}` },
+          UpdateExpression: 'SET memberCount = :c REMOVE expiresAt',
+          ExpressionAttributeValues: { ':c': memberCount },
+          ConditionExpression: 'attribute_exists(pk)',
+        })
+      : new UpdateCommand({
+          TableName: this.tableName,
+          Key: { pk: ROOM_INDEX_PK, sk: `ROOM#${roomId}` },
+          UpdateExpression: 'SET memberCount = :c, expiresAt = :ttl',
+          ExpressionAttributeValues: {
+            ':c': memberCount,
+            ':ttl': Math.floor(Date.now() / 1000) + EMPTY_ROOM_TTL_SECONDS,
+          },
+          ConditionExpression: 'attribute_exists(pk)',
+        });
+    await this.client.send(command).catch(() => {
       // index row may not exist (private room) — ignore
     });
   }

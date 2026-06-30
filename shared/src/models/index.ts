@@ -1,4 +1,5 @@
 export type { User, UserPublic, UserMetadata } from './User';
+export type { Buddy } from './Buddy';
 export type {
   MessageSegment,
   ChatMessage,

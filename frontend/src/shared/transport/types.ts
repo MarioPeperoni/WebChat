@@ -1,8 +1,10 @@
 import { z } from 'zod';
 import type {
+  Buddy,
   ChatMessage,
   CommandResult,
   Room,
+  RoomSummary,
   UserPublic,
 } from '@webchat/shared';
 
@@ -10,11 +12,19 @@ const userPublicShape = z.custom<UserPublic>(
   (v) => typeof v === 'object' && v !== null && 'userId' in v,
 );
 
+const buddyShape = z.custom<Buddy>(
+  (v) => typeof v === 'object' && v !== null && 'userId' in v && 'online' in v,
+);
+
 const chatMessageShape = z.custom<ChatMessage>(
   (v) => typeof v === 'object' && v !== null && 'kind' in v,
 );
 
 const roomShape = z.custom<Room>(
+  (v) => typeof v === 'object' && v !== null && 'roomId' in v,
+);
+
+const roomSummaryShape = z.custom<RoomSummary>(
   (v) => typeof v === 'object' && v !== null && 'roomId' in v,
 );
 
@@ -27,7 +37,9 @@ export const ServerEventSchema = z.discriminatedUnion('type', [
     type: z.literal('hello'),
     user: userPublicShape,
     room: roomShape.nullable(),
-    count: z.number(),
+    users: z.array(userPublicShape),
+    rooms: z.array(roomSummaryShape),
+    buddies: z.array(buddyShape),
   }),
   z.object({
     type: z.literal('user_updated'),
@@ -38,8 +50,12 @@ export const ServerEventSchema = z.discriminatedUnion('type', [
     data: chatMessageShape,
   }),
   z.object({
-    type: z.literal('users_count'),
-    count: z.number(),
+    type: z.literal('room_user_joined'),
+    user: userPublicShape,
+  }),
+  z.object({
+    type: z.literal('room_user_left'),
+    userId: z.string(),
   }),
   z.object({
     type: z.literal('command_result'),
@@ -49,6 +65,24 @@ export const ServerEventSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('room_changed'),
     room: roomShape,
+    users: z.array(userPublicShape),
+  }),
+  z.object({
+    type: z.literal('rooms_list'),
+    rooms: z.array(roomSummaryShape),
+  }),
+  z.object({
+    type: z.literal('buddy_added'),
+    buddy: buddyShape,
+  }),
+  z.object({
+    type: z.literal('buddy_removed'),
+    userId: z.string(),
+  }),
+  z.object({
+    type: z.literal('buddy_presence_changed'),
+    userId: z.string(),
+    online: z.boolean(),
   }),
 ]);
 

@@ -1,8 +1,8 @@
-import { useRef, type KeyboardEvent } from 'react';
+import { useEffect, useRef, type KeyboardEvent } from 'react';
 
 import { useAutoFocus } from '@/features/chat/hooks/useAutoFocus';
 import { useSendMessage } from '@/features/chat/hooks/useSendMessage';
-import { useChatStore } from '@/features/chat/store';
+import { useChatStore, useInputDraftStore } from '@/features/chat/store';
 import { MAX_MESSAGE_LENGTH } from '@/shared/config';
 
 import s from '@/features/chat/components/MessageInput/MessageInput.module.css';
@@ -13,9 +13,23 @@ export const MessageInput = () => {
   const canSend = useChatStore(
     (s) => s.status === 'active' || s.status === 'syncing',
   );
+  const draft = useInputDraftStore((s) => s.draft);
+  const draftSeq = useInputDraftStore((s) => s.seq);
+  const consumeDraft = useInputDraftStore((s) => s.consume);
   const { send, isSending } = useSendMessage();
 
   useAutoFocus(inputRef, [messages]);
+
+  useEffect(() => {
+    if (draft === null) return;
+    const el = inputRef.current;
+    if (!el) return;
+    el.value = draft;
+    el.focus();
+    const end = el.value.length;
+    el.setSelectionRange(end, end);
+    consumeDraft();
+  }, [draft, draftSeq, consumeDraft]);
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key !== 'Enter') return;

@@ -1,0 +1,10 @@
+.box {
+  flex: 1;
+  min-height: 0;
+  padding: 10px 8px;
+  background: var(--win9-window-fill);
+  color: var(--win9-text-muted);
+  font-style: italic;
+  font-size: 12px;
+  text-align: center;
+}

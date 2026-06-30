@@ -1,0 +1,35 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 2px;
+  background: var(--win9-face);
+  border-width: 1px;
+  border-style: solid;
+  border-color: var(--win9-highlight) var(--win9-shadow-dark) var(--win9-shadow-dark) var(--win9-highlight);
+  box-shadow: inset 1px 1px 0 var(--win9-highlight-soft), inset -1px -1px 0 var(--win9-shadow);
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 0;
+}
+
+.button:hover {
+  background: var(--win9-highlight-soft);
+}
+
+.button:active {
+  border-color: var(--win9-shadow-dark) var(--win9-highlight) var(--win9-highlight) var(--win9-shadow-dark);
+  box-shadow: inset 1px 1px 0 var(--win9-shadow), inset -1px -1px 0 var(--win9-highlight-soft);
+}
+
+.add {
+  color: #008f00;
+}
+
+.remove {
+  color: #c00000;
+}
+
+.info {
+  color: #0033cc;
+}

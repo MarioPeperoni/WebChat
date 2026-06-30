@@ -4,10 +4,12 @@ import type {
   UsersRepository,
 } from '@/repositories';
 import type {
+  BuddiesService,
   PresenceService,
   RoomsService,
   WebSocketBroadcaster,
 } from '@/services';
+import { buildBuddyCommands } from '@/services/commands/buddyCommands';
 import { CommandRegistry } from '@/services/commands/CommandRegistry';
 import { buildHelpCommands } from '@/services/commands/helpCommands';
 import { buildProfileCommands } from '@/services/commands/profileCommands';
@@ -18,6 +20,7 @@ export interface RegistryDeps {
   presence: PresenceRepository;
   connections: ConnectionsRepository;
   rooms: RoomsService;
+  buddies: BuddiesService;
   presenceService: PresenceService;
   broadcaster: WebSocketBroadcaster;
 }
@@ -31,6 +34,7 @@ export function buildRegistry(deps: RegistryDeps): CommandRegistry {
       presence: deps.presence,
       connections: deps.connections,
       presenceService: deps.presenceService,
+      buddies: deps.buddies,
     }),
   );
 
@@ -38,9 +42,20 @@ export function buildRegistry(deps: RegistryDeps): CommandRegistry {
     buildRoomCommands({
       rooms: deps.rooms,
       users: deps.users,
+      presence: deps.presence,
       connections: deps.connections,
       presenceService: deps.presenceService,
       broadcaster: deps.broadcaster,
+    }),
+  );
+
+  registry.registerAll(
+    buildBuddyCommands({
+      buddies: deps.buddies,
+      users: deps.users,
+      presence: deps.presence,
+      connections: deps.connections,
+      presenceService: deps.presenceService,
     }),
   );
 

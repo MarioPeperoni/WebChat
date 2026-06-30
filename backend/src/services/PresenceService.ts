@@ -2,7 +2,9 @@ import { ConditionalCheckFailedException } from '@aws-sdk/client-dynamodb';
 
 import {
   GLOBAL_ROOM_ID,
+  type Buddy,
   type Room,
+  type RoomSummary,
   type User,
   type UserPublic,
 } from '@webchat/shared';
@@ -13,6 +15,7 @@ import type {
   ConnectionsRepository,
 } from '@/repositories';
 import type {
+  BuddiesService,
   UserService,
   ChatService,
   WebSocketBroadcaster,
@@ -36,6 +39,7 @@ export class PresenceService {
     private readonly broadcaster: WebSocketBroadcaster,
     private readonly geoService: GeoService,
     private readonly rooms: RoomsService,
+    private readonly buddies: BuddiesService,
     private readonly logger: Logger,
   ) {}
 
@@ -54,17 +58,31 @@ export class PresenceService {
     const sessions = await this.users.incrementSessions(userId);
 
     await this.connections.add({ connectionId, userId, roomId: GLOBAL_ROOM_ID });
-    await this.presence.setUserPresent(GLOBAL_ROOM_ID, UserServiceClass.toPublic(profile));
+    const publicProfile = UserServiceClass.toPublic(profile);
+    await this.presence.setUserPresent(GLOBAL_ROOM_ID, publicProfile);
+
+    const others = (await this.connections.listConnectionIds(GLOBAL_ROOM_ID))
+      .filter((id) => id !== connectionId);
+
+    await this.broadcaster.send(
+      others,
+      { type: 'room_user_joined', user: publicProfile },
+      endpoint,
+    );
 
     if (this.shouldAnnounceJoin(isNew, sessions, oldLastSeenAt, now)) {
-      const others = (await this.connections.listConnectionIds(GLOBAL_ROOM_ID))
-        .filter((id) => id !== connectionId);
       await this.chatService.broadcastSystem(
         others,
-        SystemMessageFactory.joined(UserServiceClass.toPublic(profile)),
+        SystemMessageFactory.joined(publicProfile),
         endpoint,
       );
     }
+
+    if (sessions === 1) {
+      await this.notifyBuddyOwners(userId, true, endpoint);
+    }
+
+    await this.broadcastRoomsList(endpoint, connectionId);
   }
 
   async unregister(connectionId: string, endpoint: string): Promise<void> {
@@ -82,11 +100,19 @@ export class PresenceService {
     if (!profile) return;
 
     const remaining = await this.connections.listConnectionIds(meta.roomId);
+    await this.broadcaster.send(
+      remaining,
+      { type: 'room_user_left', userId: meta.userId },
+      endpoint,
+    );
     await this.chatService.broadcastSystem(
       remaining,
       SystemMessageFactory.left(UserServiceClass.toPublic(profile)),
       endpoint,
     );
+
+    await this.notifyBuddyOwners(meta.userId, false, endpoint);
+    await this.broadcastRoomsList(endpoint);
   }
 
   async switchRoom(
@@ -114,6 +140,16 @@ export class PresenceService {
     const newRoomMembers = (await this.connections.listConnectionIds(newRoomId))
       .filter((id) => id !== connectionId);
 
+    await this.broadcaster.send(
+      oldRoomMembers,
+      { type: 'room_user_left', userId: meta.userId },
+      endpoint,
+    );
+    await this.broadcaster.send(
+      newRoomMembers,
+      { type: 'room_user_joined', user: publicProfile },
+      endpoint,
+    );
     await this.chatService.broadcastSystem(
       oldRoomMembers,
       SystemMessageFactory.left(publicProfile),
@@ -124,6 +160,8 @@ export class PresenceService {
       SystemMessageFactory.joined(publicProfile),
       endpoint,
     );
+
+    await this.broadcastRoomsList(endpoint);
 
     return this.rooms.get(newRoomId);
   }
@@ -166,6 +204,8 @@ export class PresenceService {
 
     const usersInRoom = await this.presence.listUsers(meta.roomId);
     const room = await this.rooms.get(meta.roomId);
+    const rooms = await this.snapshotRoomsList();
+    const buddies = await this.buddies.listBuddies(meta.userId);
 
     await this.broadcaster.send(
       [connectionId],
@@ -173,10 +213,88 @@ export class PresenceService {
         type: 'hello',
         user: UserServiceClass.toPublic(profile),
         room,
-        count: usersInRoom.length,
+        users: usersInRoom,
+        rooms,
+        buddies,
       },
       endpoint,
     );
+  }
+
+  async notifyBuddyOwners(
+    userId: string,
+    online: boolean,
+    endpoint: string,
+  ): Promise<void> {
+    const ownerIds = await this.buddies.listOwnersOf(userId);
+    if (ownerIds.length === 0) return;
+    const targetConnections = (
+      await Promise.all(
+        ownerIds.map((ownerId) => this.connections.listConnectionIdsForUser(ownerId)),
+      )
+    ).flat();
+    if (targetConnections.length === 0) return;
+    await this.broadcaster.send(
+      targetConnections,
+      { type: 'buddy_presence_changed', userId, online },
+      endpoint,
+    );
+  }
+
+  async broadcastBuddyAddedToOwner(
+    ownerId: string,
+    buddy: Buddy,
+    endpoint: string,
+  ): Promise<void> {
+    const connections = await this.connections.listConnectionIdsForUser(ownerId);
+    if (connections.length === 0) return;
+    await this.broadcaster.send(
+      connections,
+      { type: 'buddy_added', buddy },
+      endpoint,
+    );
+  }
+
+  async broadcastBuddyRemovedToOwner(
+    ownerId: string,
+    buddyUserId: string,
+    endpoint: string,
+  ): Promise<void> {
+    const connections = await this.connections.listConnectionIdsForUser(ownerId);
+    if (connections.length === 0) return;
+    await this.broadcaster.send(
+      connections,
+      { type: 'buddy_removed', userId: buddyUserId },
+      endpoint,
+    );
+  }
+
+  async snapshotRoomsList(): Promise<RoomSummary[]> {
+    const publicRooms = await this.rooms.listPublic();
+    const counts = await Promise.all(
+      publicRooms.map((r) => this.connections.listConnectionIds(r.roomId)),
+    );
+    const enriched = publicRooms
+      .filter((r) => r.roomId !== GLOBAL_ROOM_ID)
+      .map((room, i) => ({ ...room, memberCount: counts[i]!.length }));
+
+    const globalCount = (await this.connections.listConnectionIds(GLOBAL_ROOM_ID)).length;
+    const global: RoomSummary = {
+      roomId: GLOBAL_ROOM_ID,
+      name: GLOBAL_ROOM_ID,
+      memberCount: globalCount,
+      hasPassword: false,
+    };
+    return [global, ...enriched];
+  }
+
+  async broadcastRoomsList(endpoint: string, excludeConnectionId?: string): Promise<void> {
+    const rooms = await this.snapshotRoomsList();
+    const all = await this.connections.listAllConnectionIds();
+    const targets = excludeConnectionId
+      ? all.filter((id) => id !== excludeConnectionId)
+      : all;
+    await this.broadcaster.send(targets, { type: 'rooms_list', rooms }, endpoint);
   }
 
   private async ensureProfile(

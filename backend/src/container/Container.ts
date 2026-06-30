@@ -1,10 +1,12 @@
 import {
+  BuddiesRepository,
   ConnectionsRepository,
   PresenceRepository,
   RoomsRepository,
   UsersRepository,
 } from '@/repositories';
 import {
+  BuddiesService,
   ChatService,
   GeoService,
   PresenceService,
@@ -26,10 +28,12 @@ class Container {
   private _presenceRepository?: PresenceRepository;
   private _connectionsRepository?: ConnectionsRepository;
   private _roomsRepository?: RoomsRepository;
+  private _buddiesRepository?: BuddiesRepository;
   private _userService?: UserService;
   private _presenceService?: PresenceService;
   private _chatService?: ChatService;
   private _roomsService?: RoomsService;
+  private _buddiesService?: BuddiesService;
   private _webSocketBroadcaster?: WebSocketBroadcaster;
   private _geoService?: GeoService;
   private _commandRegistry?: CommandRegistry;
@@ -73,6 +77,13 @@ class Container {
     return this._roomsRepository;
   }
 
+  get buddiesRepository(): BuddiesRepository {
+    if (!this._buddiesRepository) {
+      this._buddiesRepository = new BuddiesRepository(this.tableName);
+    }
+    return this._buddiesRepository;
+  }
+
   get userService(): UserService {
     if (!this._userService) this._userService = new UserService();
     return this._userService;
@@ -107,6 +118,17 @@ class Container {
     return this._roomsService;
   }
 
+  get buddiesService(): BuddiesService {
+    if (!this._buddiesService) {
+      this._buddiesService = new BuddiesService(
+        this.buddiesRepository,
+        this.usersRepository,
+        this.connectionsRepository,
+      );
+    }
+    return this._buddiesService;
+  }
+
   get presenceService(): PresenceService {
     if (!this._presenceService) {
       this._presenceService = new PresenceService(
@@ -118,6 +140,7 @@ class Container {
         this.webSocketBroadcaster,
         this.geoService,
         this.roomsService,
+        this.buddiesService,
         this.logger,
       );
     }
@@ -136,6 +159,7 @@ class Container {
         presence: this.presenceRepository,
         connections: this.connectionsRepository,
         rooms: this.roomsService,
+        buddies: this.buddiesService,
         presenceService: this.presenceService,
         broadcaster: this.webSocketBroadcaster,
       });

@@ -1,0 +1,17 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 2px 0;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  background: var(--win9-window-fill);
+}
+
+.empty {
+  padding: 8px 10px;
+  color: var(--win9-text-muted);
+  font-size: 12px;
+  font-style: italic;
+  background: var(--win9-window-fill);
+}

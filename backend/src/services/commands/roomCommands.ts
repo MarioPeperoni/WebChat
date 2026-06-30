@@ -1,6 +1,10 @@
 import { GLOBAL_ROOM_ID, type MessageSegment, type Room, type RoomSummary, type RoomVisibility } from '@webchat/shared';
 
-import type { ConnectionsRepository, UsersRepository } from '@/repositories';
+import type {
+  ConnectionsRepository,
+  PresenceRepository,
+  UsersRepository,
+} from '@/repositories';
 import type { PresenceService, RoomsService, WebSocketBroadcaster } from '@/services';
 import { CommandFormatter } from '@/services/commands/CommandFormatter';
 import type { CommandContext, CommandDef, RoomFailureCode, RoomMutationResult } from '@/types';
@@ -12,6 +16,7 @@ const DESCRIPTION_MAX = 200;
 export interface RoomCommandDeps {
   rooms: RoomsService;
   users: UsersRepository;
+  presence: PresenceRepository;
   connections: ConnectionsRepository;
   presenceService: PresenceService;
   broadcaster: WebSocketBroadcaster;
@@ -20,17 +25,21 @@ export interface RoomCommandDeps {
 export const buildRoomCommands = (deps: RoomCommandDeps): readonly CommandDef<any>[] => [
   {
     name: 'room info',
-    description: 'show info about the current room',
-    parseArgs: noArgs,
-    execute: (ctx) => renderCurrentInfo(ctx, deps),
-  } satisfies CommandDef<null>,
+    description: 'show info about a room (default: current)',
+    usage: '/room info [<name>]',
+    parseArgs: (rest) =>
+      rest.length === 0
+        ? { ok: true, args: null }
+        : requireSlug(rest, 'room name'),
+    execute: (ctx, name) => renderRoomInfo(ctx, deps, name),
+  } satisfies CommandDef<string | null>,
 
   {
     name: 'room',
     description: 'alias for /room info',
     hidden: true,
     parseArgs: noArgs,
-    execute: (ctx) => renderCurrentInfo(ctx, deps),
+    execute: (ctx) => renderRoomInfo(ctx, deps, null),
   } satisfies CommandDef<null>,
 
   {
@@ -52,6 +61,7 @@ export const buildRoomCommands = (deps: RoomCommandDeps): readonly CommandDef<an
       const now = new Date().toISOString();
       const result = await deps.rooms.create(name, ctx.callerUserId, now);
       if (!result.ok) return mapFailure(result.code);
+      ctx.defer(() => deps.presenceService.broadcastRoomsList(ctx.endpoint));
       return CommandFormatter.ok([
         CommandFormatter.line(`room "${name}" created.`, undefined, true),
         CommandFormatter.line(`join with: /room join ${name}`),
@@ -103,6 +113,7 @@ export const buildRoomCommands = (deps: RoomCommandDeps): readonly CommandDef<an
       applyOwnerMutation(ctx, deps, async (roomId) => ({
         result: await deps.rooms.setName(roomId, ctx.callerUserId, name),
         success: [CommandFormatter.line(`Name updated to "${name}".`, undefined, true)],
+        pushRoomsList: true,
       })),
   } satisfies CommandDef<string>,
 
@@ -136,6 +147,7 @@ export const buildRoomCommands = (deps: RoomCommandDeps): readonly CommandDef<an
         success: [
           CommandFormatter.line(password ? 'Password set.' : 'Password removed.', undefined, true),
         ],
+        pushRoomsList: true,
       })),
   } satisfies CommandDef<string | null>,
 
@@ -148,20 +160,34 @@ export const buildRoomCommands = (deps: RoomCommandDeps): readonly CommandDef<an
       applyOwnerMutation(ctx, deps, async (roomId) => ({
         result: await deps.rooms.setVisibility(roomId, ctx.callerUserId, visibility),
         success: [CommandFormatter.line(`Visibility set to ${visibility}.`, undefined, true)],
+        pushRoomsList: true,
       })),
   } satisfies CommandDef<RoomVisibility>,
 ];
 
-async function renderCurrentInfo(ctx: CommandContext, deps: RoomCommandDeps) {
-  const meta = await deps.connections.lookup(ctx.callerConnectionId);
-  if (!meta) return CommandFormatter.error('not connected');
-  const room = await deps.rooms.get(meta.roomId);
-  if (!room) return CommandFormatter.error('room missing');
+async function renderRoomInfo(
+  ctx: CommandContext,
+  deps: RoomCommandDeps,
+  nameOrId: string | null,
+) {
+  const room = await resolveRoom(ctx, deps, nameOrId);
+  if (!room) return CommandFormatter.error('room not found');
   const liveRoom = await withLiveCount(room, deps);
   return CommandFormatter.ok([
     CommandFormatter.header(`${capitalize(room.name)} room info`),
     ...(await renderRoomDetails(liveRoom, deps)),
   ]);
+}
+
+async function resolveRoom(
+  ctx: CommandContext,
+  deps: RoomCommandDeps,
+  nameOrId: string | null,
+): Promise<Room | null> {
+  if (nameOrId) return deps.rooms.findRoom(nameOrId);
+  const meta = await deps.connections.lookup(ctx.callerConnectionId);
+  if (!meta) return null;
+  return deps.rooms.get(meta.roomId);
 }
 
 async function withLiveCount(room: Room, deps: RoomCommandDeps): Promise<Room> {
@@ -234,15 +260,24 @@ async function applyOwnerMutation(
   op: (roomId: string) => Promise<{
     result: RoomMutationResult;
     success: MessageSegment[][];
+    pushRoomsList?: boolean;
   }>,
 ) {
   const meta = await deps.connections.lookup(ctx.callerConnectionId);
   if (!meta) return CommandFormatter.error('not connected');
-  const { result, success } = await op(meta.roomId);
+  const { result, success, pushRoomsList } = await op(meta.roomId);
   if (!result.ok) return mapFailure(result.code);
   const liveRoom = await withLiveCount(result.value, deps);
   const ids = await deps.connections.listConnectionIds(meta.roomId);
-  await deps.broadcaster.send(ids, { type: 'room_changed', room: liveRoom }, ctx.endpoint);
+  const users = await deps.presence.listUsers(meta.roomId);
+  await deps.broadcaster.send(
+    ids,
+    { type: 'room_changed', room: liveRoom, users },
+    ctx.endpoint,
+  );
+  if (pushRoomsList) {
+    ctx.defer(() => deps.presenceService.broadcastRoomsList(ctx.endpoint));
+  }
   return CommandFormatter.ok(success);
 }
 
@@ -252,9 +287,10 @@ async function notifyCallerRoomChanged(
   room: Room,
 ): Promise<void> {
   const liveRoom = await withLiveCount(room, deps);
+  const users = await deps.presence.listUsers(room.roomId);
   await deps.broadcaster.send(
     [ctx.callerConnectionId],
-    { type: 'room_changed', room: liveRoom },
+    { type: 'room_changed', room: liveRoom, users },
     ctx.endpoint,
   );
 }
