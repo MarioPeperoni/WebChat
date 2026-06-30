@@ -13,7 +13,7 @@ import type { Room, RoomSummary, RoomVisibility } from '@webchat/shared';
 
 import { toRoom, toRoomSummary } from '@/repositories/rooms/mapper';
 
-const ROOM_INDEX_PK = 'ROOM_INDEX#public';
+const PUBLIC_ROOMS_PK = 'ROOM_DIRECTORY#public';
 const EMPTY_ROOM_TTL_SECONDS = 24 * 60 * 60;
 
 export class RoomsRepository {
@@ -30,7 +30,7 @@ export class RoomsRepository {
     const result = await this.client.send(
       new GetCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM_META#${roomId}`, sk: 'META' },
+        Key: { pk: `ROOM#${roomId}`, sk: 'META' },
       }),
     );
     return toRoom(result.Item);
@@ -40,7 +40,7 @@ export class RoomsRepository {
     const now = room.createdAt;
     const ttl = Math.floor(Date.now() / 1000) + EMPTY_ROOM_TTL_SECONDS;
     const item: Record<string, unknown> = {
-      pk: `ROOM_META#${room.roomId}`,
+      pk: `ROOM#${room.roomId}`,
       sk: 'META',
       roomId: room.roomId,
       name: room.name,
@@ -71,9 +71,9 @@ export class RoomsRepository {
       { client: this.client },
       {
         TableName: this.tableName,
-        FilterExpression: '#n = :n AND begins_with(pk, :p)',
+        FilterExpression: '#n = :n AND begins_with(pk, :p) AND sk = :s',
         ExpressionAttributeNames: { '#n': 'name' },
-        ExpressionAttributeValues: { ':n': name, ':p': 'ROOM_META#' },
+        ExpressionAttributeValues: { ':n': name, ':p': 'ROOM#', ':s': 'META' },
       },
     );
     for await (const page of pages) {
@@ -91,7 +91,7 @@ export class RoomsRepository {
       {
         TableName: this.tableName,
         KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
-        ExpressionAttributeValues: { ':pk': ROOM_INDEX_PK, ':prefix': 'ROOM#' },
+        ExpressionAttributeValues: { ':pk': PUBLIC_ROOMS_PK, ':prefix': 'ROOM#' },
       },
     );
 
@@ -109,7 +109,7 @@ export class RoomsRepository {
     const result = await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM_META#${roomId}`, sk: 'META' },
+        Key: { pk: `ROOM#${roomId}`, sk: 'META' },
         UpdateExpression: 'SET #n = :name',
         ExpressionAttributeNames: { '#n': 'name' },
         ExpressionAttributeValues: { ':name': name },
@@ -131,7 +131,7 @@ export class RoomsRepository {
     const result = await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM_META#${roomId}`, sk: 'META' },
+        Key: { pk: `ROOM#${roomId}`, sk: 'META' },
         UpdateExpression: 'SET #desc = :d',
         ExpressionAttributeNames: { '#desc': 'description' },
         ExpressionAttributeValues: { ':d': description },
@@ -149,7 +149,7 @@ export class RoomsRepository {
     const result = await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM_META#${roomId}`, sk: 'META' },
+        Key: { pk: `ROOM#${roomId}`, sk: 'META' },
         UpdateExpression: 'SET password = :p',
         ExpressionAttributeValues: { ':p': password },
         ConditionExpression: 'attribute_exists(pk)',
@@ -170,7 +170,7 @@ export class RoomsRepository {
     const result = await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM_META#${roomId}`, sk: 'META' },
+        Key: { pk: `ROOM#${roomId}`, sk: 'META' },
         UpdateExpression: 'SET visibility = :v',
         ExpressionAttributeValues: { ':v': visibility },
         ConditionExpression: 'attribute_exists(pk)',
@@ -191,7 +191,7 @@ export class RoomsRepository {
     const result = await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM_META#${roomId}`, sk: 'META' },
+        Key: { pk: `ROOM#${roomId}`, sk: 'META' },
         UpdateExpression: 'ADD memberCount :one REMOVE expiresAt',
         ExpressionAttributeValues: { ':one': 1 },
         ReturnValues: 'UPDATED_NEW',
@@ -206,7 +206,7 @@ export class RoomsRepository {
     const result = await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM_META#${roomId}`, sk: 'META' },
+        Key: { pk: `ROOM#${roomId}`, sk: 'META' },
         UpdateExpression: 'ADD memberCount :neg',
         ExpressionAttributeValues: { ':neg': -1 },
         ReturnValues: 'UPDATED_NEW',
@@ -222,7 +222,7 @@ export class RoomsRepository {
     await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM_META#${roomId}`, sk: 'META' },
+        Key: { pk: `ROOM#${roomId}`, sk: 'META' },
         UpdateExpression: 'SET expiresAt = :ttl',
         ExpressionAttributeValues: {
           ':ttl': Math.floor(Date.now() / 1000) + EMPTY_ROOM_TTL_SECONDS,
@@ -238,7 +238,7 @@ export class RoomsRepository {
     expiresAt?: number,
   ): Promise<void> {
     const item: Record<string, unknown> = {
-      pk: ROOM_INDEX_PK,
+      pk: PUBLIC_ROOMS_PK,
       sk: `ROOM#${roomId}`,
       roomId,
       name,
@@ -261,7 +261,7 @@ export class RoomsRepository {
     await this.client.send(
       new UpdateCommand({
         TableName: this.tableName,
-        Key: { pk: ROOM_INDEX_PK, sk: `ROOM#${roomId}` },
+        Key: { pk: PUBLIC_ROOMS_PK, sk: `ROOM#${roomId}` },
         UpdateExpression: 'SET hasPassword = :h',
         ExpressionAttributeValues: { ':h': hasPassword },
         ConditionExpression: 'attribute_exists(pk)',
@@ -273,7 +273,7 @@ export class RoomsRepository {
     await this.client.send(
       new DeleteCommand({
         TableName: this.tableName,
-        Key: { pk: ROOM_INDEX_PK, sk: `ROOM#${roomId}` },
+        Key: { pk: PUBLIC_ROOMS_PK, sk: `ROOM#${roomId}` },
       }),
     );
   }
@@ -286,14 +286,14 @@ export class RoomsRepository {
     const command = occupied
       ? new UpdateCommand({
           TableName: this.tableName,
-          Key: { pk: ROOM_INDEX_PK, sk: `ROOM#${roomId}` },
+          Key: { pk: PUBLIC_ROOMS_PK, sk: `ROOM#${roomId}` },
           UpdateExpression: 'SET memberCount = :c REMOVE expiresAt',
           ExpressionAttributeValues: { ':c': memberCount },
           ConditionExpression: 'attribute_exists(pk)',
         })
       : new UpdateCommand({
           TableName: this.tableName,
-          Key: { pk: ROOM_INDEX_PK, sk: `ROOM#${roomId}` },
+          Key: { pk: PUBLIC_ROOMS_PK, sk: `ROOM#${roomId}` },
           UpdateExpression: 'SET memberCount = :c, expiresAt = :ttl',
           ExpressionAttributeValues: {
             ':c': memberCount,

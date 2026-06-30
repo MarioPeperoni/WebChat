@@ -26,7 +26,7 @@ export class PresenceRepository {
         TableName: this.tableName,
         Item: {
           pk: `ROOM#${roomId}`,
-          sk: `USER#${user.userId}`,
+          sk: `PRESENCE#USER#${user.userId}`,
           userId: user.userId,
           name: user.name,
           color: user.color,
@@ -40,7 +40,7 @@ export class PresenceRepository {
     await this.client.send(
       new DeleteCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM#${roomId}`, sk: `USER#${userId}` },
+        Key: { pk: `ROOM#${roomId}`, sk: `PRESENCE#USER#${userId}` },
       }),
     );
   }
@@ -53,7 +53,7 @@ export class PresenceRepository {
         KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
         ExpressionAttributeValues: {
           ':pk': `ROOM#${roomId}`,
-          ':prefix': 'USER#',
+          ':prefix': 'PRESENCE#USER#',
         },
       },
     );

@@ -40,7 +40,7 @@ export class ConnectionsRepository {
         TableName: this.tableName,
         Item: {
           pk: `ROOM#${meta.roomId}`,
-          sk: `CONN#${meta.connectionId}`,
+          sk: `PRESENCE#CONN#${meta.connectionId}`,
           connectionId: meta.connectionId,
           userId: meta.userId,
           roomId: meta.roomId,
@@ -69,7 +69,7 @@ export class ConnectionsRepository {
     await this.client.send(
       new DeleteCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM#${roomId}`, sk: `CONN#${connectionId}` },
+        Key: { pk: `ROOM#${roomId}`, sk: `PRESENCE#CONN#${connectionId}` },
       }),
     );
   }
@@ -81,7 +81,7 @@ export class ConnectionsRepository {
     await this.client.send(
       new DeleteCommand({
         TableName: this.tableName,
-        Key: { pk: `ROOM#${meta.roomId}`, sk: `CONN#${meta.connectionId}` },
+        Key: { pk: `ROOM#${meta.roomId}`, sk: `PRESENCE#CONN#${meta.connectionId}` },
       }),
     );
     await this.client.send(
@@ -97,7 +97,7 @@ export class ConnectionsRepository {
         TableName: this.tableName,
         Item: {
           pk: `ROOM#${newRoomId}`,
-          sk: `CONN#${meta.connectionId}`,
+          sk: `PRESENCE#CONN#${meta.connectionId}`,
           connectionId: meta.connectionId,
           userId: meta.userId,
           roomId: newRoomId,
@@ -114,7 +114,7 @@ export class ConnectionsRepository {
         KeyConditionExpression: 'pk = :pk AND begins_with(sk, :prefix)',
         ExpressionAttributeValues: {
           ':pk': `ROOM#${roomId}`,
-          ':prefix': 'CONN#',
+          ':prefix': 'PRESENCE#CONN#',
         },
         ProjectionExpression: 'connectionId',
       },
